@@ -154,30 +154,24 @@ void calculateKforSwizzling(
     PackK = 16 / MiKv / realDataTypeSize(datatype);
 }
 
-template<typename T, std::enable_if_t<true
+template <typename T>
+struct is_packed_fp_type : std::false_type {};
+
 #if defined(HIPBLASLT_USE_FP6) && defined(HIPBLASLT_USE_BF6)
-                                      && (!std::is_same<hipblaslt_f6x16, T>::value)
-                                      && (!std::is_same<hipblaslt_bf6x16, T>::value)
+template <> struct is_packed_fp_type<hipblaslt_f6x16> : std::true_type {};
+template <> struct is_packed_fp_type<hipblaslt_bf6x16> : std::true_type {};
 #endif
 #if defined(HIPBLASLT_USE_FP4)
-                                      && (!std::is_same<hipblaslt_f4x2, T>::value)
+template <> struct is_packed_fp_type<hipblaslt_f4x2> : std::true_type {};
 #endif
-                                      ,bool> = true>
+
+template<typename T, std::enable_if_t<!is_packed_fp_type<T>::value, bool> = true>
 float typeToFloat(T* buf, size_t idx)
 {
     return static_cast<float>(buf[idx]);
 }
 
-#if (defined(HIPBLASLT_USE_FP6) && defined(HIPBLASLT_USE_BF6)) || defined(HIPBLASLT_USE_FP4)
-template<typename T, std::enable_if_t<false
-#if defined(HIPBLASLT_USE_FP6) && defined(HIPBLASLT_USE_BF6)
-                                      || std::is_same<hipblaslt_f6x16, T>::value
-                                      || std::is_same<hipblaslt_bf6x16, T>::value
-#endif
-#if defined(HIPBLASLT_USE_FP4)
-                                      || std::is_same<hipblaslt_f4x2, T>::value
-#endif
-                                      ,bool> = true>
+template<typename T, std::enable_if_t<is_packed_fp_type<T>::value, bool> = true>
 float typeToFloat(T* buf, size_t idx)
 {
     size_t oIdx = idx / T::packed_size;
@@ -185,7 +179,6 @@ float typeToFloat(T* buf, size_t idx)
 
     return buf[oIdx].castElement(iIdx);
 }
-#endif
 
 template<typename T, typename S>
 std::vector<float> mx_type_to_f32(T* buf, S* sbuf, size_t row, size_t col, size_t srow, size_t scol)
