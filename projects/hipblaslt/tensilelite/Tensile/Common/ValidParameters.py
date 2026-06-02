@@ -1045,7 +1045,12 @@ validParameters = { # we need to make sure this matches develop
     # 1: Use PLR 0.5 for A
     # 2: Use PLR 0.5 for B
     # 3: Use PLR 0.5 for both A and B
-    "HalfPLR": [0, 1, 2, 3]
+    "HalfPLR": [0, 1, 2, 3],
+    # Bitmask opting tiles into software iterate-mode TDM (bit0=A, bit1=B).
+    # Bypasses the HW pad_interval cap (1024 B) by emitting tensor_load_to_lds
+    # with iterate_enable=1 and a software-driven LDS write stride. Rejected
+    # when LDSTrInst is True or ProblemType is Sparse.
+    "TDMIterateMode": [0, 1, 2, 3]
 }
 
 newMIValidParameters = {

@@ -311,8 +311,12 @@ class TensorDataMoverLoad(TensorDataMover):
 
     def setIterationEnabled(self, group1, enabled: bool) -> Module:
         mod = Module()
-        mask = 1 << 19 if enabled else 0xFFF7FFFF
-        mod.add(SAndB32(sgpr(group1), sgpr(group1), hex(mask)))
+        if enabled:
+            mod.add(SOrB32(sgpr(group1), sgpr(group1), hex(1 << 19),
+                           "set iterate_enable (D# Group 1 bit 19)"))
+        else:
+            mod.add(SAndB32(sgpr(group1), sgpr(group1), hex(0xFFF7FFFF),
+                            "clear iterate_enable (D# Group 1 bit 19)"))
         return mod
 
     def resetTensorDimForTail(self, group1: int | str, sgprTail: int, tdmDescIdx: int, writer: "KernelWriterAssembly", constShifter: int=0, isMXS: bool=False, isSparseTrack: bool=False) -> Module:
