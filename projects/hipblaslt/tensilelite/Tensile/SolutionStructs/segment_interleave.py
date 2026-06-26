@@ -53,7 +53,7 @@ def evaluate(state):
     fA, fB = _footprint(state, "A"), _footprint(state, "B")
     dA, dB = _data_bytes(state, "A"), _data_bytes(state, "B")
     base = state["LdsOffsetA"]
-    if fA < SEG // 2:
+    if (base % SEG) + fA + fB < SEG:
         return _no("small MacroTile (aligned branch deferred to phase 2)")
 
     bpe = _bpe(state)

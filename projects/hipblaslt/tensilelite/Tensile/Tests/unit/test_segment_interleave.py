@@ -29,12 +29,11 @@ def test_small_mt_skips_aligned_deferred():
     r = evaluate(_vw8_state(MacroTile0=128, MacroTile1=128))
     assert r["applicable"] is False and "aligned" in r["reason"]
 
-def test_non_square_mt_offsets():
-    r = evaluate(_vw8_state(MacroTile1=128))  # dA=32768, dB=16384
-    assert r["applicable"] is True
-    assert r["offsets"]["ldsBaseB"] == 33024            # base + footprintA
-    assert r["offsets"]["writeStrideBytes"] == 49152    # dA+dB pre-pad
-    assert r["offsets"]["readWaveStride"] == 24576      # (dA+dB)//bpe
+def test_non_square_small_skips():
+    # MT0=256, MT1=128: coarse VW ok (16*8=128 >= 256//2), but fA+fB=49536 < SEG
+    # -> tight cannot move A1 into the next segment -> skip (aligned branch deferred).
+    r = evaluate(_vw8_state(MacroTile1=128))
+    assert r["applicable"] is False and "aligned" in r["reason"]
 
 def test_off_switch_disables(monkeypatch):
     monkeypatch.setenv("TENSILE_LDS_SEGMENT_INTERLEAVE", "0")
