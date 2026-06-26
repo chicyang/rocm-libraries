@@ -198,6 +198,8 @@ class LraTileAssignmentTransposedMFMA(LraTileAssignment):
         strideTile   = int(int(tP["localReadInstruction"].blockWidth * writer.states.bpr) // tP["bpeDS"])
         strideUnroll = mt + ldsPad
         strideWave   = numTileInInst * matrixInstT * vectorWidth
+        if kernel.get("LDSSegInterleave"):
+            strideWave = kernel["LDSSegInterleaveOffsets"]["readWaveStride"]
 
         with writer.allocTmpSgpr(1, tag="LraTileAssignmentTransposedMFMA_tmpSgprInfo") as tmpSgprInfo:
             # tile offset = (wtId%16)//8*8
