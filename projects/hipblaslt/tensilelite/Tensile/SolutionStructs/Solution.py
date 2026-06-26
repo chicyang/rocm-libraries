@@ -4691,6 +4691,16 @@ class Solution(collections.abc.Mapping):
       if rawLdsOffsetB % 8 != 4:
         rawLdsOffsetB += (4 - rawLdsOffsetB % 8) % 8
     state["LdsOffsetB"] = rawLdsOffsetB
+    from Tensile.SolutionStructs.segment_interleave import evaluate as _segIntEval
+    _segRes = _segIntEval(state)
+    state["LDSSegInterleave"] = _segRes["applicable"]
+    state["LDSSegInterleaveOffsets"] = _segRes["offsets"]
+    if _segRes["applicable"]:
+        print("[LDSSegInterleave] %s: APPLIED %s offsets=%s"
+              % (state.get("KernelName", "?"), _segRes["segmentMap"], _segRes["offsets"]))
+    else:
+        print("[LDSSegInterleave] %s: SKIP reason=%s"
+              % (state.get("KernelName", "?"), _segRes["reason"]))
     if state["PrefetchGlobalRead"]:
       offsetBlk = state["LdsOffsetB"] + ldsNumBytesAlignedB
       # Buffer-swap delta must be 8-aligned to keep buffer 1 in half-wave mode.
