@@ -851,6 +851,11 @@ class LraTileAssignmentMFMA(LraTileAssignment):
         else:
            strideWave = matrixInstT * num1DBlocks * strideTile * vectorWidth
 
+        # Segment-conflict interleave (v1): unrollMajor kernels read via this
+        # (non-LDSTr) path, so the wave-stride override must be applied here too.
+        if kernel.get("LDSSegInterleave"):
+            strideWave = kernel["LDSSegInterleaveOffsets"]["readWaveStride"]
+
         lsu              = kernel["LocalSplitU"]
 
         if isDTVAB:
