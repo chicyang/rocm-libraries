@@ -6,12 +6,24 @@ from Tensile.SolutionStructs.segment_interleave import evaluate
 
 pytestmark = pytest.mark.unit
 
+class _FakeDataType:
+    # Mirrors the real DataType API the oracle uses, without importing rocisa.
+    def __init__(self, bf16=True, nbytes=2.0):
+        self._bf16 = bf16
+        self._nbytes = nbytes
+    def isBFloat16(self):
+        return self._bf16
+    def numBytes(self):
+        return self._nbytes
+
 def _vw8_state(**ovr):
+    # TLUA/TLUB are TOP-LEVEL state keys (not under ProblemType); DataType is an object.
     s = dict(NumWaves=4, WavefrontSize=32, MacroTile0=256, MacroTile1=256, DepthU=128,
              LdsOffsetA=0, LdsBlockSizePerPadA=2048, LdsBlockSizePerPadB=2048,
              LdsPadA=8, LdsPadB=8, VectorWidthA=8, VectorWidthB=8,
              MatrixInstM=16, MatrixInstN=16, TDMSplit=0, enableTDMA=1, enableTDMB=1,
-             ProblemType=dict(TLUA=0, TLUB=0, Sparse=0, DataType="b", MXBlockA=0, MXBlockB=0))
+             TLUA=0, TLUB=0,
+             ProblemType=dict(Sparse=0, DataType=_FakeDataType(), MXBlockA=0, MXBlockB=0))
     s["ProblemType"] = {**s["ProblemType"], **ovr.pop("ProblemType", {})}
     s.update(ovr); return s
 
@@ -43,5 +55,9 @@ def test_tdmsplit_skips():
     assert evaluate(_vw8_state(TDMSplit=1))["applicable"] is False
 
 def test_tile_major_skips():
-    r = evaluate(_vw8_state(ProblemType={"TLUA": 1}))
+    r = evaluate(_vw8_state(TLUA=1))  # top-level TLU key
     assert r["applicable"] is False and ("tile-major" in r["reason"] or "tlu" in r["reason"])
+
+def test_non_bf16_skips():
+    r = evaluate(_vw8_state(ProblemType={"DataType": _FakeDataType(bf16=False)}))
+    assert r["applicable"] is False and "bf16" in r["reason"]

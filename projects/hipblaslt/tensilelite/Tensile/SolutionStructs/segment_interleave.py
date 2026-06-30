@@ -5,13 +5,12 @@ import os
 
 SEG = 65536
 
-_DT_BYTES = {"b": 2, "h": 2, "s": 4}  # v1: bf16("b"); others fall through to skip via DataType check
-
 def _off_switch_disabled():
     return os.environ.get("TENSILE_LDS_SEGMENT_INTERLEAVE", "1").lower() in ("0", "false", "off")
 
 def _bpe(state):
-    return _DT_BYTES.get(state["ProblemType"]["DataType"], 2)
+    # DataType is a DataType object, not a string; numBytes() is 2.0 for bf16.
+    return int(state["ProblemType"]["DataType"].numBytes())
 
 def _pad(x, blk, padElems, bpe):
     if blk == 0 or padElems == 0:
@@ -43,11 +42,11 @@ def evaluate(state):
     if _off_switch_disabled():                                  return _no("off-switch")
     if not (state.get("enableTDMA") and state.get("enableTDMB") and state["NumWaves"] > 1):
         return _no("not wave-separated TDM")
-    if pt.get("TLUA") or pt.get("TLUB"):                        return _no("tile-major (tlu) deferred")
+    if state.get("TLUA") or state.get("TLUB"):                  return _no("tile-major (tlu) deferred")
     if state["NumWaves"] // 2 != 2:                             return _no("numComp!=2")
     if state.get("TDMSplit") or pt.get("MXBlockA") or pt.get("MXBlockB") or pt.get("Sparse"):
         return _no("split/mxs/sparse")
-    if pt["DataType"] not in ("b",):                            return _no("v1: bf16 only")
+    if not pt["DataType"].isBFloat16():                         return _no("v1: bf16 only")
     if not _coarse_vw(state):                                   return _no("fine VW")
 
     fA, fB = _footprint(state, "A"), _footprint(state, "B")
