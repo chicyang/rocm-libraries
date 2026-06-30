@@ -42,7 +42,8 @@ def evaluate(state):
     if _off_switch_disabled():                                  return _no("off-switch")
     if not (state.get("enableTDMA") and state.get("enableTDMB") and state["NumWaves"] > 1):
         return _no("not wave-separated TDM")
-    if state.get("TLUA") or state.get("TLUB"):                  return _no("tile-major (tlu) deferred")
+    if not state.get("UnrollMajorLDSA") or not state.get("UnrollMajorLDSB"):
+        return _no("not unrollMajor (tile-major deferred)")  # the LDS-layout flag, matches isLDSTrEnabled
     if state["NumWaves"] // 2 != 2:                             return _no("numComp!=2")
     if state.get("TDMSplit") or pt.get("MXBlockA") or pt.get("MXBlockB") or pt.get("Sparse"):
         return _no("split/mxs/sparse")

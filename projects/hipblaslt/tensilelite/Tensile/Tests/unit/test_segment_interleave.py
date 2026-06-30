@@ -22,7 +22,7 @@ def _vw8_state(**ovr):
              LdsOffsetA=0, LdsBlockSizePerPadA=2048, LdsBlockSizePerPadB=2048,
              LdsPadA=8, LdsPadB=8, VectorWidthA=8, VectorWidthB=8,
              MatrixInstM=16, MatrixInstN=16, TDMSplit=0, enableTDMA=1, enableTDMB=1,
-             TLUA=0, TLUB=0,
+             UnrollMajorLDSA=1, UnrollMajorLDSB=1,
              ProblemType=dict(Sparse=0, DataType=_FakeDataType(), MXBlockA=0, MXBlockB=0))
     s["ProblemType"] = {**s["ProblemType"], **ovr.pop("ProblemType", {})}
     s.update(ovr); return s
@@ -55,8 +55,8 @@ def test_tdmsplit_skips():
     assert evaluate(_vw8_state(TDMSplit=1))["applicable"] is False
 
 def test_tile_major_skips():
-    r = evaluate(_vw8_state(TLUA=1))  # top-level TLU key
-    assert r["applicable"] is False and ("tile-major" in r["reason"] or "tlu" in r["reason"])
+    r = evaluate(_vw8_state(UnrollMajorLDSA=0))  # not unrollMajor -> deferred
+    assert r["applicable"] is False and ("unrollMajor" in r["reason"] or "tile-major" in r["reason"])
 
 def test_non_bf16_skips():
     r = evaluate(_vw8_state(ProblemType={"DataType": _FakeDataType(bf16=False)}))
