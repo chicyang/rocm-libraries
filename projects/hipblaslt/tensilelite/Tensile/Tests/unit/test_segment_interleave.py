@@ -8,11 +8,14 @@ pytestmark = pytest.mark.unit
 
 class _FakeDataType:
     # Mirrors the real DataType API the oracle uses, without importing rocisa.
-    def __init__(self, bf16=True, nbytes=2.0):
+    def __init__(self, bf16=True, half=False, nbytes=2.0):
         self._bf16 = bf16
+        self._half = half
         self._nbytes = nbytes
     def isBFloat16(self):
         return self._bf16
+    def isHalf(self):
+        return self._half
     def numBytes(self):
         return self._nbytes
 
@@ -58,6 +61,12 @@ def test_tile_major_skips():
     r = evaluate(_vw8_state(UnrollMajorLDSA=0))  # not unrollMajor -> deferred
     assert r["applicable"] is False and ("unrollMajor" in r["reason"] or "tile-major" in r["reason"])
 
-def test_non_bf16_skips():
-    r = evaluate(_vw8_state(ProblemType={"DataType": _FakeDataType(bf16=False)}))
-    assert r["applicable"] is False and "bf16" in r["reason"]
+def test_fp16_applies_same_as_bf16():
+    # fp16 has the same bpe (2) and the same write/read paths -> identical offsets.
+    r = evaluate(_vw8_state(ProblemType={"DataType": _FakeDataType(bf16=False, half=True)}))
+    assert r["applicable"] is True
+    assert r["offsets"] == {"ldsBaseB": 33024, "writeStrideBytes": 65536, "readWaveStride": 32768}
+
+def test_fp32_skips():
+    r = evaluate(_vw8_state(ProblemType={"DataType": _FakeDataType(bf16=False, half=False, nbytes=4)}))
+    assert r["applicable"] is False and ("bf16" in r["reason"] or "fp16" in r["reason"])

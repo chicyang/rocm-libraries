@@ -47,7 +47,8 @@ def evaluate(state):
     if state["NumWaves"] // 2 != 2:                             return _no("numComp!=2")
     if state.get("TDMSplit") or pt.get("MXBlockA") or pt.get("MXBlockB") or pt.get("Sparse"):
         return _no("split/mxs/sparse")
-    if not pt["DataType"].isBFloat16():                         return _no("v1: bf16 only")
+    if not (pt["DataType"].isBFloat16() or pt["DataType"].isHalf()):
+        return _no("v1: bf16/fp16 only")  # both are 2-byte; identical write/read paths
     if not _coarse_vw(state):                                   return _no("fine VW")
 
     fA, fB = _footprint(state, "A"), _footprint(state, "B")
