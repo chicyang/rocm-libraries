@@ -4696,11 +4696,11 @@ class Solution(collections.abc.Mapping):
     state["LDSSegInterleave"] = _segRes["applicable"]
     state["LDSSegInterleaveOffsets"] = _segRes["offsets"]
     if _segRes["applicable"]:
-        print2("[LDSSegInterleave] %s: APPLIED %s offsets=%s"
-               % (state.get("KernelName", "?"), _segRes["segmentMap"], _segRes["offsets"]))
+        print("[LDSSegInterleave] %s: APPLIED %s offsets=%s"
+              % (state.get("KernelName", "?"), _segRes["segmentMap"], _segRes["offsets"]))
     else:
-        print2("[LDSSegInterleave] %s: SKIP reason=%s"
-               % (state.get("KernelName", "?"), _segRes["reason"]))
+        print("[LDSSegInterleave] %s: SKIP reason=%s"
+              % (state.get("KernelName", "?"), _segRes["reason"]))
     if state["PrefetchGlobalRead"]:
       offsetBlk = state["LdsOffsetB"] + ldsNumBytesAlignedB
       # Buffer-swap delta must be 8-aligned to keep buffer 1 in half-wave mode.
