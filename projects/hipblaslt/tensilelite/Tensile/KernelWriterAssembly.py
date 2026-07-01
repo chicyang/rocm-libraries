@@ -5887,13 +5887,12 @@ class KernelWriterAssembly(KernelWriter):
     # no need to generate add code if LdsOffset is 0 or DirectToVgprB
     if (tc in ("A", "B", "MXSA", "MXSB")) and kernel["DirectToVgpr%s"%tc]:
       module = Module("lraDeclareAddresses (Empty)")
-    elif (kernel["LdsOffset%s"%tc] != 0):
-      module.add(VAddCOU32(
-          dst=vgpr("LocalReadAddr%s+0"%tc), \
-          dst1=VCC(), \
-          src0=hex(kernel["LdsOffset%s"%tc]), \
-          src1=vgpr("LocalReadAddr%s+0"%tc), \
-          comment=" += LdsOffset%s (lower)"%tc))
+    elif (kernel["LdsOffset%s"%tc] != 0) or (kernel.get("LDSSegInterleave") and tc == "B"):
+      _bbase = kernel["LDSSegInterleaveOffsets"]["ldsBaseB"] if (kernel.get("LDSSegInterleave") and tc == "B") \
+               else kernel["LdsOffset%s"%tc]
+      module.add(VAddCOU32(dst=vgpr("LocalReadAddr%s+0"%tc), dst1=VCC(),
+                           src0=hex(_bbase), src1=vgpr("LocalReadAddr%s+0"%tc),
+                           comment=" += LdsOffset%s (lower)"%tc))
 
     if tP["isA"]:
       numVgpr = self.states.a.numVgprLocalReadAddr
@@ -18905,6 +18904,8 @@ class KernelWriterAssembly(KernelWriter):
       tmpPadSgprIdx: int = tmpSgprRes.idx + 1
       mod.add(SLShiftRightB32(sgpr(waveOffsetSgprIdx), 1, sgpr(waveIdxSgpr), "wId=WaveIdx // 2 (each component covers 2 waves: numComp = numWaves // 2)"))
       dataBytes = mt // numComp * du * int(bpe * 4) // (4 * dim1Divisor)
+      if kernel.get("LDSSegInterleave"):
+          dataBytes = kernel["LDSSegInterleaveOffsets"]["writeStrideBytes"]
       mod.add(SMulI32(sgpr(waveOffsetSgprIdx), sgpr(waveOffsetSgprIdx), dataBytes, f"woffset = wId * (mt // numComp * du * bpe // dim1Divisor)"))
       if ldsBlockSizePerPad != 0 and ldsPadSize != 0:
         mod.add(SLShiftRightB32(sgpr(tmpPadSgprIdx), int(log2(ldsBlockSizePerPad)), sgpr(waveOffsetSgprIdx), \
@@ -18913,6 +18914,8 @@ class KernelWriterAssembly(KernelWriter):
                 f"padBytes = numPadBlocks * ({ldsPadSize=})"))
         mod.add(SAddU32(sgpr(waveOffsetSgprIdx), sgpr(waveOffsetSgprIdx), sgpr(tmpPadSgprIdx), \
                 "woffset += padBytes"))
+      if kernel.get("LDSSegInterleave") and tc == "B":
+          ldsConstOffset = kernel["LDSSegInterleaveOffsets"]["ldsBaseB"]
       mod.add(SAddU32(sgpr(waveOffsetSgprIdx), sgpr(waveOffsetSgprIdx), ldsConstOffset, "ldsOffset = woffset + ldsConstOffset"))
       mod.add(comp.setLdsAddr(descSgprName(0), sgpr(waveOffsetSgprIdx)))
 

@@ -4778,11 +4778,30 @@ class Solution(collections.abc.Mapping):
       if rawLdsOffsetB % 8 != 4:
         rawLdsOffsetB += (4 - rawLdsOffsetB % 8) % 8
     state["LdsOffsetB"] = rawLdsOffsetB
+    from Tensile.SolutionStructs.segment_interleave import evaluate as _segIntEval, aligned_budget_ok as _segAlignedBudget
+    _segRes = _segIntEval(state)
+    state["LDSSegInterleave"] = _segRes["applicable"]
+    state["LDSSegInterleaveOffsets"] = _segRes["offsets"]
+    state["LDSSegInterleaveAligned"] = _segRes.get("aligned", False)
+    state["LDSSegInterleaveBlockSpan"] = _segRes.get("blockSpan", 0)
+    # Segment map when applied, else the skip reason (logged later in _getKernelSource).
+    state["LDSSegInterleaveMap"] = _segRes["segmentMap"] if _segRes["applicable"] else _segRes["reason"]
     if state["PrefetchGlobalRead"]:
       offsetBlk = state["LdsOffsetB"] + ldsNumBytesAlignedB
       # Buffer-swap delta must be 8-aligned to keep buffer 1 in half-wave mode.
       if (halfBankShiftA > 0 or halfBankShiftB > 0) and offsetBlk % 8 != 0:
         offsetBlk += 8 - (offsetBlk % 8)
+      # Aligned branch grows the per-buffer block so A1 lands in the next segment;
+      # commit only if it double-buffers within MaxLDS, else fall back to baseline.
+      _segAligned = state["LDSSegInterleave"] and state["LDSSegInterleaveAligned"]
+      if _segAligned:
+        _ok, _inflated = _segAlignedBudget(state["LDSSegInterleaveBlockSpan"], numLdsBlk, offsetBlk, state["MaxLDS"])
+        if _ok:
+          offsetBlk = _inflated   # already a power of two -> roundup below is a no-op
+        else:
+          state["LDSSegInterleave"] = False
+          state["LDSSegInterleaveMap"] = "small MT aligned skipped (LDS budget/buffering)"
+          _segAligned = False
       roundupOffsetBlk = int(2**(math.ceil(math.log(offsetBlk, 2)))) if offsetBlk > 0 else 0
 
       if not isaInfoMap[isa].asmCaps["HasWMMA"]:
@@ -4799,6 +4818,10 @@ class Solution(collections.abc.Mapping):
         offsetBlk = roundupOffsetBlk
 
       ldsNumBytesAB = setLdsOffsets(offsetBlk, numLdsBlk, ldsNumBytesB)
+      if _segAligned:
+        # setLdsOffsets assumes an [A|B] span, but aligned spreads A1 a segment further,
+        # so reserve the real per-buffer span (max() never shrinks the baseline).
+        ldsNumBytesAB = max(ldsNumBytesAB, (numLdsBlk - 1) * offsetBlk + state["LDSSegInterleaveBlockSpan"])
       # decrement numLdsBlk for DtlPlusLdsBuf if it exceeds MaxLDS
       # PGR 2 case, reject kernel (need to use StoreSwapAddr in that case)
       if state["DtlPlusLdsBuf"] and ldsNumBytesAB > state["MaxLDS"]:

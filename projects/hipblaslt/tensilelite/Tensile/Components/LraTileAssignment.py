@@ -198,6 +198,10 @@ class LraTileAssignmentTransposedMFMA(LraTileAssignment):
         strideTile   = int(int(tP["localReadInstruction"].blockWidth * writer.states.bpr) // tP["bpeDS"])
         strideUnroll = mt + ldsPad
         strideWave   = numTileInInst * matrixInstT * vectorWidth
+        # Interleave hook for the LDSTr/tile-major read path; inert in v1 (the oracle skips
+        # non-unrollMajor kernels, so recompute readWaveStride here when tile-major lands).
+        if kernel.get("LDSSegInterleave"):
+            strideWave = kernel["LDSSegInterleaveOffsets"]["readWaveStride"]
 
         with writer.allocTmpSgpr(1, tag="LraTileAssignmentTransposedMFMA_tmpSgprInfo") as tmpSgprInfo:
             # tile offset = (wtId%16)//8*8
@@ -848,6 +852,11 @@ class LraTileAssignmentMFMA(LraTileAssignment):
            strideWave = matrixInstT * vectorWidth
         else:
            strideWave = matrixInstT * num1DBlocks * strideTile * vectorWidth
+
+        # Segment-conflict interleave (v1): unrollMajor kernels read via this
+        # (non-LDSTr) path, so the wave-stride override must be applied here too.
+        if kernel.get("LDSSegInterleave"):
+            strideWave = kernel["LDSSegInterleaveOffsets"]["readWaveStride"]
 
         lsu              = kernel["LocalSplitU"]
 

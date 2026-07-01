@@ -10661,6 +10661,14 @@ class KernelWriter(metaclass=abc.ABCMeta):
     tensorParametersA = {}
     tensorParametersB = {}
     self._initKernel(kernel, tensorParametersA, tensorParametersB)
+    if kernel.get("LDSSegInterleave"):
+      print("[LDSSegInterleave] APPLIED %s %s offsets=%s"
+            % (getKernelNameMin(kernel, self.debugConfig.splitGSU),
+               kernel.get("LDSSegInterleaveMap", ""), kernel["LDSSegInterleaveOffsets"]))
+    elif kernel.get("LDSSegInterleaveMap"):  # oracle ran and skipped this (generated) kernel
+      print("[LDSSegInterleave] SKIP %s reason=%s"
+            % (getKernelNameMin(kernel, self.debugConfig.splitGSU),
+               kernel["LDSSegInterleaveMap"]))
     self.stringIdx = 0
     if not kernel["UseSubtileImpl"]:
       (error, kb) = self.kernelBody(kernel, tensorParametersA, tensorParametersB)
