@@ -1,0 +1,1 @@
+ rocprofv3 -E ~/counter_mi450.yaml --pmc TX_PERF_SEL_VMW_LDS_BANKCONF_LOAD_CNT,TX_PERF_SEL_VMW_CROSS_PORT_SEGMENT_CONFLICT_LDS_STALLED_CYCLES --output-format csv -d conflict_opt2 -- ./1_BenchmarkProblems/Cijk_Alik_Bljk_BBS_BH_UserArgs_00/00_Final/build/run.sh
