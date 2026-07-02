@@ -25,6 +25,7 @@ class _FakeDataType:
 def _vw8_state(**ovr):
     # TLUA/TLUB are TOP-LEVEL state keys (not under ProblemType); DataType is an object.
     s = dict(NumWaves=4, WavefrontSize=32, MacroTile0=256, MacroTile1=256, DepthU=128,
+             ISA=(12, 5, 0),
              LdsOffsetA=0, LdsBlockSizePerPadA=2048, LdsBlockSizePerPadB=2048,
              LdsPadA=8, LdsPadB=8, VectorWidthA=8, VectorWidthB=8,
              MatrixInstM=16, MatrixInstN=16, TDMSplit=0, enableTDMA=1, enableTDMB=1,
@@ -42,6 +43,12 @@ def test_vw8_applies_with_handedit_values(monkeypatch):
 def test_vw4_skips_fine_vw():
     r = evaluate(_vw8_state(VectorWidthA=4))
     assert r["applicable"] is False and "fine VW" in r["reason"]
+
+def test_non_gfx1250_skips():
+    # SEG=64KiB layout is gfx1250-specific; other ISAs must not apply the interleave.
+    for isa in [(9, 4, 2), (9, 5, 0), (12, 0, 0), (11, 0, 0)]:
+        r = evaluate(_vw8_state(ISA=isa))
+        assert r["applicable"] is False and "gfx1250" in r["reason"]
 
 def test_vwb_fine_skips():
     # B can be fine-VW even when A is coarse (odd WaveTile -> VWB=1). Must skip:
