@@ -1,0 +1,88 @@
+# Perf-tuning config for the gfx1250 LDS segment-conflict interleave.
+# Forks LDSSegmentInterleave: [0, 1] so the benchmark measures baseline vs interleave
+# per solution and picks the faster winner. public/develop-compatible globals.
+# Run:  ./Tensile/bin/Tensile bbs_tn_perf_tune.yaml <out> --gpu-targets gfx1250 --prebuilt-client=<client>
+GlobalParameters:
+  # --- perf mode (no host validation; timed with GPU timer) ---
+  KernelTime: True
+  NumElementsToValidate: 0        # perf run: skip validation (correctness already checked)
+  NumWarmups: 20
+  EnqueuesPerSync: 200
+  SyncsPerBenchmark: 5
+  NumBenchmarks: 1
+  SleepPercent: 0
+  # RotatingBufferSize: 512       # (MB) enable to defeat L2 caching for steadier numbers
+  KeepBuildTmp: True
+  DataInitTypeA: 3
+  DataInitTypeB: 3
+  DataInitTypeD: 2
+  DataInitTypeAlpha: 1
+  DataInitTypeBeta: 0
+
+BenchmarkProblems:
+  -
+    - # ProblemType, TN
+      OperationType: GEMM
+      DataType: b
+      DestDataType: b
+      ComputeDataType: s
+      HighPrecisionAccumulate: True
+      TransposeA: True
+      TransposeB: False
+      UseBeta: True
+      Batched: True
+      Activation: False
+      SupportUserArgs: True
+      UseBias: 0
+
+    - # BenchmarkProblemSizeGroup
+      InitialSolutionParameters:
+      BenchmarkCommonParameters:
+        - KernelLanguage: ["Assembly"]
+      ForkParameters:
+        - UseSgprForGRO: [0]
+        - ForceDisableShadowInit: [True]
+        - MatrixInstruction:
+          - [16, 16, 32, 1,  1,  2, 2,  2, 2]   # MT64x64
+          - [16, 16, 32, 1,  1,  4, 4,  2, 2]   # MT128x128
+          - [16, 16, 32, 1,  1,  4, 8,  2, 2]   # MT128x256
+          - [16, 16, 32, 1,  1,  8, 4,  2, 2]   # MT256x128
+          - [16, 16, 32, 1,  1,  8, 8,  2, 2]   # MT256x256
+        - DepthU: [128, 256]
+        - TDMIterateMode: [-1]
+        - TDMInst: [3]
+        - HalfPLR: [1]
+        - TDMSplit: [False]                     # interleave-eligible only (clean A/B)
+        - LDSSegmentInterleave: [0, 1]          # <-- the A/B knob: 0 baseline, 1 interleave
+        - TransposeLDS: [-1]
+        - LdsPadA: [-1]
+        - LdsPadB: [-1]
+        - LdsBlockSizePerPadA: [-1]
+        - LdsBlockSizePerPadB: [-1]
+        - LDSTrInst: [False]
+        - StaggerU: [0]
+        - ScheduleIterAlg: [4]
+        - PrefetchLocalRead: [1]
+        - PrefetchGlobalRead: [2]
+        - StoreRemapVectorWidth: [0]
+        - GlobalSplitU: [1]
+        - GlobalSplitUAlgorithm: [MultipleBuffer]
+        - GlobalReadVectorWidthA: [-1]
+        - GlobalReadVectorWidthB: [-1]
+        - VectorWidthA: [-1]
+        - VectorWidthB: [-1]
+        - LocalReadVectorWidth: [-1]
+        - 1LDSBuffer: [0]
+        - SourceSwap: [True]
+        - ClusterDim: [[2,4]]
+        - WorkGroupMapping: [1]
+        - StoreVectorWidth: [-1]
+        - WavefrontSize: [32]
+        - ExpandPointerSwap: [False]
+      BenchmarkForkParameters:
+      JoinParameters:
+      BenchmarkJoinParameters:
+      BenchmarkFinalParameters:
+        - ProblemSizes:
+          - Exact: [1024, 1024, 1, 1024]
+          - Exact: [4096, 4096, 1, 4096]

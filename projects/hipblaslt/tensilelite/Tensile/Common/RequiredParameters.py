@@ -34,6 +34,7 @@ def getRequiredParametersFull() -> set:
 def getRequiredParametersMin() -> set:
     return frozenset({
         '1LDSBuffer',
+        'LDSSegmentInterleave',  # in the (min) kernel name so on/off variants aren't deduped
         'ActivationFuncCall',
         'AdaptiveGemm',
         'BufferLoad',
