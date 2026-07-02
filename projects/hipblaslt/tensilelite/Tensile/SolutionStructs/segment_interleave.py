@@ -69,6 +69,8 @@ def aligned_budget_ok(blockSpan, numLdsBlk, naturalOffsetBlk, maxLDS):
 def evaluate(state):
     pt = state["ProblemType"]
     if _off_switch_disabled():                                  return _no("off-switch")
+    # Per-solution parameter (default 1 = on/auto). Set 0 to force baseline (tuning).
+    if not state.get("LDSSegmentInterleave", 1):               return _no("parameter off")
     # gfx1250-only: SEG=64KiB (5 segments) and the wave-separated TDM port model are
     # gfx1250-specific; the offset math would be wrong on other ISAs.
     if tuple(state.get("ISA", ()))[:2] != (12, 5):             return _no("not gfx1250")

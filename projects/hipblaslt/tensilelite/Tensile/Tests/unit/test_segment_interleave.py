@@ -129,6 +129,12 @@ def test_off_switch_disables(monkeypatch):
     monkeypatch.setenv("TENSILE_LDS_SEGMENT_INTERLEAVE", "0")
     assert evaluate(_vw8_state())["applicable"] is False
 
+def test_parameter_off_skips():
+    # LDSSegmentInterleave=0 forces baseline (per-solution tuning knob); default (unset)=on.
+    r = evaluate(_vw8_state(LDSSegmentInterleave=0))
+    assert r["applicable"] is False and "parameter off" in r["reason"]
+    assert evaluate(_vw8_state(LDSSegmentInterleave=1))["applicable"] is True
+
 def test_tdmsplit_skips():
     assert evaluate(_vw8_state(TDMSplit=1))["applicable"] is False
 

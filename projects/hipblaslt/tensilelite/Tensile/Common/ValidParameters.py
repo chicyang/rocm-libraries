@@ -328,6 +328,9 @@ validParameters = { # we need to make sure this matches develop
     #    SIA3: 1LDSBuffer works only when PGR=True
     # TODO: optimize scheduling to support more cases.
     "1LDSBuffer": [-1, 0, 1],
+    # gfx1250 LDS segment-conflict interleave (wave-separated TDM). 1 = apply when the
+    # oracle scope holds (bf16/fp16/fp8, unrollMajor, coarse VW, ...); 0 = force baseline.
+    "LDSSegmentInterleave": [0, 1],
     # StreamK persistent loop: use the current tile's no-load-loop window to
     # issue the first global-read group for the next persistent tile. The
     # generated code keeps that first-PGR data durable and restores borrowed
