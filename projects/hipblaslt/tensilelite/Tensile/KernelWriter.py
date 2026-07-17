@@ -8004,6 +8004,20 @@ class KernelWriter(metaclass=abc.ABCMeta):
           maxOffsetMXSB += kernel["LdsOffsetA_Blk"]
           maxOffsetMetadata += kernel["LdsOffsetA_Blk"]
 
+        # Segment-interleave puts component 1 at +writeStrideBytes, past B's own region. Only the
+        # narrow-B path folds that jump into the ds immediate (LocalRead), so its read reaches
+        # farther and needs an extra LocalReadAddr register. Coarse B (a wave spans a whole
+        # component) folds the jump into the base address, so its immediate stays within one
+        # component; don't inflate there or we reserve a LocalReadAddr VGPR that is never read.
+        if kernel.get("LDSSegmentInterleave") == 1:
+          numComp = kernel["NumWaves"] // 2
+          compColsB = kernel["MacroTile1"] // numComp
+          segILWaveSpansCompB = min(kernel["MatrixInstM"], kernel["MatrixInstN"]) * kernel["VectorWidthB"] >= compColsB
+          if not segILWaveSpansCompB:
+            writeStride = kernel["LDSSegInterleaveOffsets"]["writeStrideBytes"]
+            reachB = (numComp - 1) * writeStride + maxOffsetB // numComp
+            maxOffsetB = max(maxOffsetB, reachB)
+
         numVgprMultiplierA = maxOffsetA // maxLDSConstOffset + 1
         numVgprMultiplierB = maxOffsetB // maxLDSConstOffset + 1
         numVgprMultiplierMXSA = maxOffsetMXSA // maxLDSConstOffset + 1
