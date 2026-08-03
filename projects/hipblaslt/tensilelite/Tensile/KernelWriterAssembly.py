@@ -19237,24 +19237,45 @@ class KernelWriterAssembly(KernelWriter):
       mod.add(comp.setTensorTile0(descSgprName(1), sizeTile0, self, sizeShifter))
       mod.add(comp.setTensorTile1(descSgprName(1), sizeTile1 // numWaves, self))
     else:
-      # isSparseTrack/isMetadata apply to the K dimension (index 3).
-      # For unrolledMajor (TN): K is dim0. For tlu (NN): K is dim1.
-      dim0IsK = unrolledMajor
-      if is6bit:
-        # F6: 0.75 bytes/element. dim0 in bytes = elements * 3 / 4.
-        # NOTE: F6 currently dense-only (TN GEMM). Composition with isSparseTrack/isMetadata
-        # is not yet exercised — both code paths assume they are mutually exclusive.
-        with self.allocTmpSgpr(1, tag="initTDMDescriptor_tmpF6") as tmpF6:
-          mod.add(SLShiftRightB32(sgpr(tmpF6.idx), hex(2), sgpr(sizeRefName(dim0Idx)), "F6: elements / 4"))
-          mod.add(SMulI32(sgpr(tmpF6.idx), sgpr(tmpF6.idx), 3, "F6: * 3 = bytes"))
-          mod.add(comp.setTensorDim0(descSgprName(1), tmpF6.idx, self, 0))
-      else:
-        mod.add(comp.setTensorDim0(descSgprName(1), sizeRefName(dim0Idx), self, sizeShifter, False,
-                                    isSparseTrack=isSparseTrack if dim0IsK else False,
-                                    isMetadata=isMetadata if dim0IsK else False))
-      mod.add(comp.setTensorDim1(descSgprName(1), sizeRefName(dim1Idx), self, 0, False,
-                                  isSparseTrack=isSparseTrack if not dim0IsK else False,
-                                  isMetadata=isMetadata if not dim0IsK else False))
+      # The free (tile) dimension's global base address is advanced by
+      # MacroTile*WorkGroup in calculateStartAddr(); the tensor-descriptor free-dim
+      # bound must therefore be the REMAINING size from that per-workgroup origin,
+      # otherwise a partial last tile (Size % MacroTile != 0) over-reads past the
+      # tensor end into the guard page / adjacent allocation (hipErrorIllegalAddress).
+      # Mirrors initTDMDescriptorWaveSeparatedImpl (single-wave: no wave split).
+      # isSparseTrack/isMetadata apply to the K dimension (index 3):
+      # for unrolledMajor (TN) K is dim0, for tlu (NN) K is dim1.
+      with self.allocTmpSgpr(1, tag="initTDMDescriptor_tmpSgprRes2") as tmpSgprRes:
+        tmpSgprIdx: int = tmpSgprRes.idx
+        if tc in ("A", "B"):
+          size, wgIdx = ("SizeI", "WorkGroup0") if tc[-1] == "A" else ("SizeJ", "WorkGroup1")
+          mod.add(SMulI32(sgpr(tmpSgprIdx), mt, sgpr(wgIdx)))
+          mod.add(SSubI32(sgpr(tmpSgprIdx), sgpr(size), sgpr(tmpSgprIdx)))
+          freeDim = tmpSgprIdx
+        else:
+          # Only Metadata reaches here (A/B handled above; MXS scale tensors are
+          # never built in this single-wave path -- they always go through
+          # initTDMDescriptorWaveSeparatedImpl, where Brianna applied the same
+          # remaining-size fix to the MXS dim0). Metadata keeps its existing
+          # global-size handling to avoid changing an unrelated, currently-working path.
+          freeDim = sizeRefName(ti)
+        dim0 = sizeRefName(dim0Idx) if unrolledMajor else freeDim
+        dim1 = freeDim if unrolledMajor else sizeRefName(dim1Idx)
+        if is6bit:
+          # F6: 0.75 bytes/element. dim0 in bytes = elements * 3 / 4.
+          # NOTE: F6 currently dense-only (TN GEMM). Composition with isSparseTrack/isMetadata
+          # is not yet exercised — both code paths assume they are mutually exclusive.
+          with self.allocTmpSgpr(1, tag="initTDMDescriptor_tmpF6") as tmpF6:
+            mod.add(SLShiftRightB32(sgpr(tmpF6.idx), hex(2), sgpr(dim0), "F6: elements / 4"))
+            mod.add(SMulI32(sgpr(tmpF6.idx), sgpr(tmpF6.idx), 3, "F6: * 3 = bytes"))
+            mod.add(comp.setTensorDim0(descSgprName(1), tmpF6.idx, self, 0))
+        else:
+          mod.add(comp.setTensorDim0(descSgprName(1), dim0, self, sizeShifter, False,
+                                      isSparseTrack if unrolledMajor else False,
+                                      isMetadata if unrolledMajor else False))
+        mod.add(comp.setTensorDim1(descSgprName(1), dim1, self, 0, False,
+                                    isSparseTrack if not unrolledMajor else False,
+                                    isMetadata if not unrolledMajor else False))
       if is6bit:
         mod.add(comp.setTensorTile0(descSgprName(1), sizeTile0 * 3 // 4, self, 0))
       else:
