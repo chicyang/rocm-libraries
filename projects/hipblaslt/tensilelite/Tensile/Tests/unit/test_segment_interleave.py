@@ -232,13 +232,33 @@ def test_auto_skips_aligned():
     r1 = evaluate(_vw8_state(DepthU=64, PrefetchGlobalRead=2, LDSSegmentInterleave=1))
     assert r1["applicable"] is True and r1["aligned"] is True
 
-def test_miwavegroup_not_2x2_skips():
-    # footprint packing assumes 2 waves per MFMA dim; NumWaves=4 with MIWG [4,1]/[1,4] passes
-    # Solution.py's prod>1 / pow2 gates but would lose/OOB the component jump. Must skip.
-    # MacroTile follows MIWG (derived in the helper), so each state stays MI-consistent.
-    for miwg in ([4, 1], [1, 4]):
-        r = evaluate(_vw8_state(MIWaveGroup=miwg))
-        assert r["applicable"] is False and "MIWaveGroup" in r["reason"], miwg
+def test_miwg_4x1_large_tile_baseline_sufficient():
+    # [4,1] large tile: active data fits one segment (fActData <= SEG) AND baseline already lands
+    # A0/A1 in different segments -> no interleave needed (only pad tail spills, negligible).
+    r = evaluate(_vw8_state(MIWaveGroup=[4, 1]))            # MIWaveTile[8,8] -> fActData=SEG
+    assert r["applicable"] is False
+    assert "baseline" in r["reason"], r["reason"]
+
+def test_miwg_1x4_large_tile_interleaves_not_baseline():
+    # [1,4]: B active, but baseline lays out [A][MX][B] so B sits at a non-aligned offset -> its
+    # comps span/overlap a segment even at fB==SEG. No baseline shortcut here; interleave realigns
+    # B to offset 0 (bcontig) -> aBaseline. (Contrast [4,1] where A@0 stays baseline.)
+    r = evaluate(_vw8_state(MIWaveGroup=[1, 4]))
+    assert r["applicable"] is True
+    assert r["offsets"]["aBaseline"] is True
+
+def test_miwg_4x1_small_tile_bcontig():
+    # [4,1] small tile: baseline packs A0/A1 in one segment -> interleave separates them with the
+    # whole shared B as the gap ([A0][B_whole][A1]) -> bBaseline.
+    r = evaluate(_vw8_state(MIWaveGroup=[4, 1], MIWaveTile=[4, 8], VectorWidthA=4))
+    assert r["applicable"] is True
+    assert r["offsets"]["bBaseline"] is True
+
+def test_miwg_1x4_small_tile_bcontig_mirror():
+    # Mirror small [1,4] -> aBaseline.
+    r = evaluate(_vw8_state(MIWaveGroup=[1, 4], MIWaveTile=[8, 4], VectorWidthB=4))
+    assert r["applicable"] is True
+    assert r["offsets"]["aBaseline"] is True
 
 def test_tdmsplit_composes():
     # TDMSplit composes: same offsets as the non-split path.
