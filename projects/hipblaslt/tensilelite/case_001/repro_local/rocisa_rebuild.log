@@ -1,0 +1,292 @@
+CMake Warning (dev) at CMakeLists.txt:61 (set):
+  Cannot set "STINKYTOFU_ROOT_DIR": current scope has no parent.
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- StinkyTofu version: 0.1.0 (0d4e002ad2-dirty)
+-- Using archs: Gfx1250
+-- Configuring done (0.3s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-build
+[1/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/analysis/asm/AsmVerifierPass.cpp.o
+[2/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/RemoveDelayAluPass.cpp.o
+[3/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/pipeline/backend/Backend.cpp.o
+[4/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/DeadCodeEliminationPass.cpp.o
+[5/86] Building CXX object examples/plugins/CMakeFiles/stinkytofu-plugin-helloworld.dir/HelloWorldPass.cpp.o
+[6/86] Linking CXX shared module plugins/libstinkytofu-plugin-helloworld.so
+[7/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/hardware/HWModel.cpp.o
+[8/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/SetMatrixReusePass.cpp.o
+[9/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/core/PassManager.cpp.o
+[10/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/core/ModulePassManager.cpp.o
+[11/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/RederiveExpertScopePass.cpp.o
+[12/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/RegionClonePass.cpp.o
+[13/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/waitcnt/ShallowPredPromotion.cpp.o
+[14/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/PeepholeOptimizationPass.cpp.o
+[15/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/SwInstructionPrefetchAbsStaticPass.cpp.o
+[16/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/serialization/asm/StinkyAsmPrinter.cpp.o
+[17/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/MemTokenConsistencyCheckPass.cpp.o
+[18/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/ir/asm/StinkyAsmIR.cpp.o
+[19/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/InsertInitialUnclausedVmemPass.cpp.o
+[20/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/RaiseVgprMsbPass.cpp.o
+[21/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/RedundantMovEliminationPass.cpp.o
+[22/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/StinkyRemoveWaitCntPass.cpp.o
+[23/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/BuildDefUseChain.cpp.o
+[24/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/pipeline/backend/BackendRegistry.cpp.o
+[25/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/analysis/asm/HazardGapAnalysisPass.cpp.o
+[26/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/FlattenCalleesPass.cpp.o
+[27/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/InstructionSizeCosting.cpp.o
+[28/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/pipeline/PassBuilder.cpp.o
+[29/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/analysis/logical/IRVerifierPass.cpp.o
+[30/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/serialization/asm/IRParser.cpp.o
+[31/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/ExecMaskGrouping.cpp.o
+[32/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/logical/LogicalPeepholePass.cpp.o
+[33/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/StinkyBuildImplicitDependencyPass.cpp.o
+[34/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/logical/CompositeInstructionLoweringPass.cpp.o
+[35/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/LoopRegionRemarkPass.cpp.o
+[36/86] Building CXX object tools/intrinsic-compiler/CMakeFiles/intrinsic-compiler.dir/intrinsic-compiler.cpp.o
+[37/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/serialization/asm/StinkyAsmEmitter.cpp.o
+[38/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/ir/asm/AsmSetSymbolMap.cpp.o
+[39/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/ir/logical/LogicalToFunctionConverter.cpp.o
+[40/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/core/DebugPrintInstrumentation.cpp.o
+[41/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/SwInstructionPrefetchRelStaticPass.cpp.o
+[42/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/LongBranchLoweringPass.cpp.o
+[43/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/hardware/ArchHelper.cpp.o
+[44/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/bindings/python/LogicalModule.cpp.o
+[45/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/PhiPlacement.cpp.o
+[46/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/InsertVgprMsbPass.cpp.o
+[47/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/logical/ToStinkyAsmPass.cpp.o
+[48/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/ir/logical/IntrinsicPatternConverter.cpp.o
+[49/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/InsertClusterBarrierPass.cpp.o
+[50/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/StinkyWaitCntInsertionPass.cpp.o
+[51/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/InsertWaitAluPass.cpp.o
+[52/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/logical/IntrinsicExpansionPass.cpp.o
+[53/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/RemoveWaitAluPass.cpp.o
+[54/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/pipeline/backend/Gfx1250Backend.cpp.o
+[55/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/ir/asm/StinkySignature.cpp.o
+[56/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/RemoveInstructionPass.cpp.o
+[57/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/InsertCoexecHazardPass.cpp.o
+[58/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/RemoveDscntPass.cpp.o
+[59/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/Gfx1250HazardPass.cpp.o
+[60/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/ir/DumpStinkyModulePass.cpp.o
+[61/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/SwInstructionPrefetchRelDynamicPass.cpp.o
+[62/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/core/Function.cpp.o
+[63/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/bindings/python/Module.cpp.o
+[64/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/serialization/asm/IRConverter.cpp.o
+[65/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/serialization/asm/ModifierSerializer.cpp.o
+[66/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/AccumulateInstructionSizePass.cpp.o
+[67/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/waitcnt/WaitDataflow.cpp.o
+[68/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/StinkyRemoveNopPass.cpp.o
+[69/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/CFGBuilderPass.cpp.o
+[70/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/EstimateAsmCyclesPass.cpp.o
+[71/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/LegalizationUtils.cpp.o
+[72/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/SwPrefetchRelCommon.cpp.o
+[73/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/StinkyWmmaVgprReorderPass.cpp.o
+[74/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/serialization/asm/RawAsmParser.cpp.o
+[75/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/InsertDelayAluPass.cpp.o
+[76/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/logical/LowerLogicalModulePipeline.cpp.o
+[77/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/StinkyDAGSchedulerPass.cpp.o
+[78/86] Building CXX object tools/stinkytofu-opt/CMakeFiles/stinkytofu-opt.dir/stinkytofu-opt.cpp.o
+[79/86] Building CXX object CMakeFiles/stinkytofu_objs.dir/src/transforms/asm/SwInstructionPrefetchAbsDynamicPass.cpp.o
+[80/86] Linking CXX shared library libstinkytofu.so.0.1.0
+[81/86] Creating library symlink libstinkytofu.so.0 libstinkytofu.so
+[82/86] Linking CXX executable tools/stinkytofu-opt/stinkytofu-opt
+[83/86] Linking CXX executable tools/intrinsic-compiler/intrinsic-compiler
+[84/86] Compiling intrinsics to /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-build/intrinsics.st.bc...
+Compiled 7 intrinsic(s) to /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-build/intrinsics.st.bc
+[85/86] Linking CXX executable tools/intrinsic-compiler/test_loader
+[86/86] Linking CXX executable tools/intrinsic-compiler/demo_auto_load
+-- Install configuration: "Release"
+-- Installing: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/lib/stinkytofu/plugins/libstinkytofu-plugin-helloworld.so
+-- Installing: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/bin/stinkytofu-opt
+-- Set non-toolchain portion of runtime path of "/home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/bin/stinkytofu-opt" to ""
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/bin/stinkytofu-check
+-- Installing: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/bin/intrinsic-compiler
+-- Set non-toolchain portion of runtime path of "/home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/bin/intrinsic-compiler" to ""
+-- Installing: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/lib/intrinsics.st.bc
+-- Installing: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/lib/libstinkytofu.so.0.1.0
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/lib/libstinkytofu.so.0
+-- Set non-toolchain portion of runtime path of "/home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/lib/libstinkytofu.so.0.1.0" to "/opt/rocm/lib"
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/lib/libstinkytofu.so
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/lib/cmake/stinkytofu/stinkytofu-targets.cmake
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/lib/cmake/stinkytofu/stinkytofu-targets-release.cmake
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/lib/cmake/stinkytofu/stinkytofuConfig.cmake
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/lib/cmake/stinkytofu/stinkytofuConfigVersion.cmake
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/core
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/core/stinkytofu.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/core/BasicBlock.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/core/Types.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/core/IRBuilder.hpp
+-- Installing: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/core/PassInstrumentation.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/core/AnalysisManager.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/core/Function.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/core/IRBase.hpp
+-- Installing: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/core/PassManager.hpp
+-- Installing: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/core/ModulePassManager.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/pipeline
+-- Installing: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/pipeline/ModuleAdaptors.hpp
+-- Installing: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/pipeline/ScopeAdaptor.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/pipeline/OptLevel.hpp
+-- Installing: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/pipeline/Backend.hpp
+-- Installing: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/pipeline/BackendRegistry.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/pipeline/PassBuilder.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/pipeline/OptimizationPasses.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/pipeline/CloneSpec.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/ir
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/ir/DumpStinkyModulePass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/ir/logical
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/ir/logical/LogicalToFunctionConverter.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/ir/logical/IntrinsicLibrary.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/ir/logical/LogicalInstructions.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/ir/logical/LogicalOpcode.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/ir/logical/IntrinsicRegistry.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/ir/logical/LogicalInstructionData.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/ir/logical/IntrinsicCall.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/ir/logical/IntrinsicPatternConverter.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/ir/asm
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/ir/asm/StinkyAsmDirectives.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/ir/asm/StinkyAsmIR.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/ir/asm/RegisterType.def
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/ir/asm/VgprMsbEncoding.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/ir/asm/DefUseChainUpdater.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/ir/asm/StinkyAsmMacro.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/ir/asm/StinkyRegister.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/ir/asm/RegHalfKeyer.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/ir/asm/StinkyMacro.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/ir/asm/StinkySignature.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/ir/asm/StinkyModifiers.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/ir/asm/AsmSetSymbolMap.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/ir/asm/RegisterKey.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/logical
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/logical/IntrinsicExpansionPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/logical/CompositeInstructionLoweringPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/logical/ToStinkyAsmPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/logical/LogicalPeepholePass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/logical/LowerLogicalModulePipeline.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm
+-- Installing: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/InsertVgprMsbPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/Gfx1250HazardProfile.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/RederiveExpertScopePass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/RedundantMovEliminationPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/dag
+-- Installing: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/dag/HazardRules.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/PhiPlacement.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/StinkyWaitCntInsertionPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/StinkyBuildImplicitDependencyPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/SwInstructionPrefetchRelDynamicPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/DeadCodeEliminationPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/LoopRegionRemarkPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/ExecMaskGrouping.hpp
+-- Installing: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/Gfx1250HazardPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/SwPrefetchRelCommon.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/LegalizationUtils.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/FlattenCalleesPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/RemoveDscntPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/PeepholeOptimizationPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/RaiseVgprMsbPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/SwInstructionPrefetchAbsDynamicPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/InsertDelayAluPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/LongBranchLoweringPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/StinkyRemoveNopPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/SwInstructionPrefetchRelStaticPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/StinkyDAGSchedulerPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/StinkyRemoveWaitCntPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/RemoveInstructionPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/RegionClonePass.hpp
+-- Installing: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/SetMatrixReusePass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/StinkyWmmaVgprReorderPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/waitcnt
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/waitcnt/WaitPlanOptimizer.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/waitcnt/ShallowPredPromotion.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/waitcnt/WaitPlan.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/waitcnt/WaitDataflow.hpp
+-- Installing: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/RemoveWaitAluPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/InstructionSizeCosting.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/AccumulateInstructionSizePass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/InsertInitialUnclausedVmemPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/SwInstructionPrefetchAbsStaticPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/MemTokenConsistencyCheckPass.hpp
+-- Installing: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/RemoveDelayAluPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/BuildDefUseChain.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/EstimateAsmCyclesPass.hpp
+-- Installing: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/InsertWaitAluPass.hpp
+-- Installing: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/InsertCoexecHazardPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/InsertClusterBarrierPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/transforms/asm/CFGBuilderPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/support
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/support/Casting.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/support/Span.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/support/IntrusiveList.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/support/OptimizationRemark.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/support/LoopDetection.hpp
+-- Installing: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/support/DebugPrintInstrumentation.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/support/CFGTraversal.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/support/ErrorHandling.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/support/StandardInstrumentations.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/support/Diagnostic.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/bindings
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/bindings/python
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/bindings/python/Module.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/bindings/python/LogicalModule.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/Export.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/hardware
+-- Installing: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/hardware/HWModel.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/hardware/GfxIsa.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/hardware/HwReg.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/hardware/ComgrProbe.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/hardware/ArchHelper.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/hardware/Flags.def
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/hardware/HwRegHelpers.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/hardware/ToolchainCaps.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/serialization
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/serialization/logical
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/serialization/logical/IRSerializer.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/serialization/asm
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/serialization/asm/IRConverter.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/serialization/asm/StinkyAsmPrinter.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/serialization/asm/IRParser.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/serialization/asm/RawAsmParser.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/serialization/asm/StinkyAsmEmitter.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/serialization/asm/PatternParser.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/analysis
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/analysis/controlflow
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/analysis/controlflow/DominanceAnalysis.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/analysis/controlflow/Dominance.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/analysis/logical
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/analysis/logical/IRVerifierPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/analysis/BBIndexAnalysis.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/analysis/AnalysisRegistration.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/analysis/LoopAnalysis.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/analysis/asm
+-- Installing: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/analysis/asm/HazardGapAnalysisPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/analysis/asm/AsmVerifierPass.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/ir/logical/LogicalInstructions_generated.hpp
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/Config/Archs.def
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/Config/Config.h
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/LogicalOpcodes_generated.inc
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/hardware/gfxIsa.inc
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/ir/rocisa
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/stinkytofu/ir/rocisa/RocisaGfx1250Mappings.inc
+-- Installing: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/Version.h
+-- Up-to-date: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/stinkytofu-install/include/stinkytofu/bindings/python/PythonBindings_generated.inc
+error: externally-managed-environment
+
+× This environment is externally managed
+╰─> To install Python packages system-wide, try apt install
+    python3-xyz, where xyz is the package you are trying to
+    install.
+    
+    If you wish to install a non-Debian-packaged Python package,
+    create a virtual environment using python3 -m venv path/to/venv.
+    Then use path/to/venv/bin/python and path/to/venv/bin/pip. Make
+    sure you have python3-full installed.
+    
+    If you wish to install a non-Debian packaged Python application,
+    it may be easiest to use pipx install xyz, which will manage a
+    virtual environment for you. Make sure you have pipx installed.
+    
+    See /usr/share/doc/python3.12/README.venv for more information.
+
+note: If you believe this is a mistake, please contact your Python installation or OS distribution provider. You can override this, at the risk of breaking your Python installation or OS, by passing --break-system-packages.
+hint: See PEP 668 for the detailed specification.

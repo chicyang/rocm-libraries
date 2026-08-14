@@ -1,0 +1,91 @@
+# Copyright Advanced Micro Devices, Inc., or its affiliates.
+# SPDX-License-Identifier: MIT
+#
+# Validation of the claim: initTDMDescriptor (non-wave-separated, NumWaves == 1)
+# emits a compile-time-constant TDM iterate count.
+#
+# ProblemType + solution parameters are taken verbatim from the NN / "tr-load-a"
+# benchmark group of Tensile/Tests/common/gemm/gfx12/tdm_gfx1250.yaml
+# (ProblemType at lines 186-199, ForkParameters at lines 201-248), restricted to:
+#   * MatrixInstruction [16,16,32,1,1,1,1,1,1]  -> MT_M = MT_N = 16, NumWaves = 1
+#   * TDMIterateMode [2]                        -> iterate mode on tensor B
+#   * one problem size Exact: [127, 127, 1, 128] (line 256) -> N=127, partial tile
+# Multi-valued fork parameters that the claim does not constrain are pinned to
+# their first listed value (DepthU 64, StaggerU 0, StaggerUMapping 0) so exactly
+# one kernel is generated.
+#
+# GlobalParameters block copied from case_001/repro_local/min_repro.yaml
+# (KeepBuildTmp, BoundsCheck: 3 = GuardPageBack, NumElementsToValidate: 0, ...).
+
+GlobalParameters: {KeepBuildTmp: true, MinimumRequiredVersion: 5.0.0, KernelTime: true, NumElementsToValidate: 0, BoundsCheck: 3, NumBenchmarks: 1, SyncsPerBenchmark: 1, EnqueuesPerSync: 1, NumWarmups: 0, Device: 0, CSVExportWinner: true, PrintSolutionRejectionReason: true, DataInitTypeA: 12, DataInitTypeB: 13, DataInitTypeC: 12, DataInitTypeD: 12, DataInitTypeAlpha: 1, DataInitTypeBeta: 1, DataInitTypeScaleAlphaVec: 12}
+
+BenchmarkProblems:
+  -
+    - # ProblemType, NN + TLDS1 => tr-load-a
+      OperationType: GEMM
+      DataType: b
+      DestDataType: b
+      ComputeDataType: s
+      HighPrecisionAccumulate:  True
+      TransposeA: False
+      TransposeB: False
+      UseBeta: True
+      Batched: True
+      Activation: False
+      SupportUserArgs: True
+      UseBias: 0
+
+    - # BenchmarkProblemSizeGroup - Standard
+      InitialSolutionParameters:
+      BenchmarkCommonParameters:
+        - KernelLanguage: ["Assembly"]
+      ForkParameters:
+        - MatrixInstruction:
+          - [16, 16, 32, 1,  1,  1, 1,  1, 1 ]
+        - DepthU: [64]
+        - TransposeLDS: [-1]
+        - LdsPadA: [-1]
+        - LdsPadB: [-1]
+        - LdsBlockSizePerPadA: [-1]
+        - LdsBlockSizePerPadB: [-1]
+        - LdsPadMetadata: [0]
+        - TDMInst: [3]
+        - TDMIterateMode: [0]
+        - LDSTrInst: [True]
+        - StaggerU: [0]
+        - StaggerUMapping: [0]
+        - ScheduleIterAlg: [0]
+        - PrefetchLocalRead: [1]
+        - PrefetchGlobalRead: [2]
+        - StoreRemapVectorWidth: [0]
+        - GlobalSplitU: [1]
+        - GlobalSplitUAlgorithm: [MultipleBuffer]
+        - GlobalReadVectorWidthA: [-1]
+        - GlobalReadVectorWidthB: [-1]
+        - VectorWidthA: [1]
+        - VectorWidthB: [1]
+        - LocalReadVectorWidth: [8]
+        - 1LDSBuffer: [0]
+        - SourceSwap: [false]
+        - DirectToVgprSparseMetadata: [false]
+        - WorkGroupMapping: [1]
+        - StoreVectorWidth: [-1]
+        - DirectToVgprA: [False]
+        - DirectToVgprB: [False]
+        - WavefrontSize: [32]
+        - ExpandPointerSwap: [false]
+        - GroupLoadStore: [False]
+      BenchmarkForkParameters:
+      JoinParameters:
+      BenchmarkJoinParameters:
+      BenchmarkFinalParameters:
+        - ProblemSizes:
+          - Exact: [127, 127, 1, 128]
+        - ActivationArgs:
+          - [Enum: none]
+
+LibraryLogic:
+  ScheduleName: gfx1250
+  ArchitectureName: gfx1250
+  DeviceNames: [Device 73f0]
+Backend: {Name: Tensile}

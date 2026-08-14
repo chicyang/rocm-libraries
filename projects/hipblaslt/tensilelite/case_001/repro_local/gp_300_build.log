@@ -1,0 +1,208 @@
+Message pack python library not detected. Must use YAML backend instead.
+
+################################################################################
+#
+#  Tensile v5.0.0
+#  OutputPath: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/case_001/repro_local/gp_300_out
+#  Config: /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/case_001/repro_local/gp_300.yaml
+#  Date & Time: 14/08/2026 01:31:30
+#
+################################################################################
+
+# Restoring default globalParameters
+# Code Object Version: 4
+# Detected GPU 0 with ISA: gfx1250
+Tensile::WARNING: HardwareMonitor currently disabled for gfx950 and gfx1250
+Capability                  gfx1250
+HasMFMA_bf16_1k             -      
+HasWMMA_AccImmZero          1      
+HasAddLshl                  1      
+HasAtomicAdd                1      
+HasBF16CVT                  1      
+HasClusterBarrier           1      
+HasCvtFP8toF16              1      
+HasCvtScalePk8Bf8F32        1      
+HasCvtScalePk8Fp8F32        1      
+HasDLCModifier              -      
+HasDirectToLds              -      
+HasDirectToLdsx4            -      
+HasExplicitCO               1      
+HasExplicitNC               1      
+HasGLCModifier              -      
+HasGLTr16B128               -      
+HasGLTr8B64                 -      
+HasGlobalPrefetch           1      
+HasLDSTr                    1      
+HasLDSTrB128B16             1      
+HasLDSTrB64B16              -      
+HasLDSTrB64B4               1      
+HasLDSTrB64B8               1      
+HasLDSTrB96B6               1      
+HasLshlOr                   1      
+HasMFMA                     -      
+HasMUBUFConst               -      
+HasMovRelsD2B32             1      
+HasNTModifier               -      
+HasNVModifier               1      
+HasNewBarrier               1      
+HasPartialOOB               -      
+HasPkF16CVT                 1      
+HasSAtomic                  -      
+HasSC0Modifier              -      
+HasSCMPK                    -      
+HasSCOPEModifier            1      
+HasSMFMA                    -      
+HasSMulHi                   1      
+HasSWMMAC                   1      
+HasScalarStore              -      
+HasScaleSRPk8Cvt            1      
+HasTDM                      1      
+HasTHModifier               1      
+HasVgprMSB                  1      
+HasVgprMSB16                1      
+HasWMMA                     1      
+HasXcnt                     1      
+MaxDscnt                    1      
+MaxKmcnt                    1      
+MaxLoadcnt                  1      
+MaxStorecnt                 1      
+MaxXcnt                     1      
+SeparateLGKMcnt             1      
+SeparateVMcnt               1      
+SeparateVscnt               -      
+ShortBranchMaxLength        1      
+SupportedISA                1      
+SupportedSource             1      
+HasWMMA_V1                  -      
+HasWMMA_V2                  -      
+HasWMMA_V3                  1      
+s_delay_alu                 1      
+v_prng_b32                  1      
+v_mov_b64                   1      
+HasMFMA_b8                  -      
+v_dot2_f32_bf16             -      
+v_dot2c_f32_bf16            -      
+HasMFMA_explictB            -      
+Hascvtfp8_f16               -      
+v_dot2_f32_f16              -      
+v_dot2c_f32_f16             -      
+v_fma_f16                   1      
+v_fmac_f16                  -      
+v_mac_f16                   -      
+v_pk_fma_f16                1      
+v_pk_fmac_f16               -      
+v_dual_fmac_f32             1      
+v_fma_f32                   1      
+v_fma_mix_f32               1      
+v_fmac_f32                  1      
+v_mac_f32                   -      
+v_mad_mix_f32               -      
+v_pk_add_f32                1      
+v_pk_fma_f32                1      
+v_pk_mul_f32                1      
+HasMFMA_f64                 -      
+HasWMMA_V3_f64              -      
+v_fma_f64                   1      
+HasMFMA_f8                  -      
+HasMFMA_f8f6f4              -      
+HasWMMA_f8f6f4              1      
+HasSWMMAC_gfx1250           1      
+HasAdd_PC_i64               -      
+VOP3v_dot4_i32_i8           1      
+v_dot4_i32_i8               -      
+v_dot4c_i32_i8              -      
+Hascvtf16_fp8_sf32          -      
+s_add_u64                   1      
+s_sub_u64                   1      
+v_add_nc_u64                1      
+HasMFMA_xf32                -      
+ArchAccUnifiedRegs          -      
+CMPXWritesSGPR              -      
+CacheLineBytes              1      
+CrosslaneWait               -      
+DSLow16NotPreserve          1      
+DefaultScopeIsCULocal       1      
+DeviceLDS                   1      
+HasAccCD                    -      
+HasEccHalf                  1      
+HasF32XEmulation            1      
+HasFP8_OCP                  1      
+HasInvWbDevFences           1      
+HasMXScaleSwizzle           1      
+HasSchedMode                1      
+HasWave32                   1      
+HasWmmaArbStallBit          1      
+LDSBankCount                1      
+LDSBankWidth                1      
+MaxSgprPreload              1      
+MaxWavesPerSimd             1      
+NoSDWA                      1      
+NumXCD                      1      
+RequiresXCntForVolatileVMEM 1      
+SDWAWait                    1      
+SgprPreloadPad              -      
+TransOpWait                 1      
+VOP3ByteSel                 1      
+VgprBank                    1      
+Waitcnt0Disabled            -      
+WorkGroupIdFromTTM          1      
+# Found hipcc version 7.15.0-0000000
+# Command-line override: CodeObjectVersion
+Overriding CodeObjectVersion=4
+Overriding PrebuiltClient=/home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/build_tmp/tensilelite/client/tensilelite-client
+
+################################################################################
+# Converting Config to BenchmarkProcess Object
+################################################################################
+
+# Filling in Parameters With Defaults
+# Convert Parameters to Benchmark Step(s)
+# Benchmark Final
+# NumBenchmarkSteps: 1
+
+################################################################################
+# Done Creating BenchmarkProcess Object
+################################################################################
+
+
+################################################################################
+# Benchmark Step: Cijk_Alik_Bljk_BBS_BH_Bias_HA_S_SAV_UserArgs_00 - 00_Final 2.426s
+# Num Sizes: 1
+# Factor Dim steps: 0
+# Bias Type steps: 1
+# Activation steps: 0
+# ICacheFlush steps: 1
+# Fork Parameters:
+# Enumerating Solutions (Parallel)
+fork solutions: Launching 128 threads...
+fork solutions: Done. (0.8 secs elapsed)
+[|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||] 100% (0.0 secs elapsed)
+# Actual Solutions: 1 / 1 after SolutionStructs
+
+[|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||] 100% (0.0 secs elapsed)
+Number of duplicate kernels: 0
+Generating assembly kernels: Launching 128 threads...
+[StinkyIRVerifier] Register width validation failed:
+Instruction '  m0 = "st.s_mov_b32"(s7) { issueCycles = 1, latencyCycles = 2 }
+' operand dest[0] has register type 'm', expected 's'
+Generating assembly kernels: Done. (10.5 secs elapsed)
+check invalid kernels and results: Launching 128 threads...
+check invalid kernels and results: Done. (0.2 secs elapsed)
+Writing assembly kernels: Launching 128 threads for 1 tasks...
+Writing assembly kernels: Done. (0.4 secs elapsed)
+buildSourceCodeObjectFile time (s): 0.00  [cache hit]
+# Actual Solutions: 1 / 1 after KernelWriter
+
+# Build-only mode: skipping benchmark.
+################################################################################
+# Cijk_Alik_Bljk_BBS_BH_Bias_HA_S_SAV_UserArgs_00
+# 00_Final: End - 14.396s
+################################################################################
+
+# Build-only mode: skipping result collection.
+
+# Build-only mode: skipping LibraryLogic and LibraryClient.
+Message pack python library not detected. Must use YAML backend instead.
+Message pack python library not detected. Must use YAML backend instead.
+Message pack python library not detected. Must use YAML backend instead.
+Message pack python library not detected. Must use YAML backend instead.

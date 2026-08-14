@@ -1,0 +1,28 @@
+loading config file case_001/repro_local/out_221/1_BenchmarkProblems/Cijk_Alik_Bljk_BBS_BH_Bias_HA_S_SAV_UserArgs_00/00_Final/caches/1e01066da7a1/source/ClientParameters.ini
+
+srand seed is set to 1786611942
+
+Loading /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/case_001/repro_local/out_221/1_BenchmarkProblems/Cijk_Alik_Bljk_BBS_BH_Bias_HA_S_SAV_UserArgs_00/00_Final/caches/1e01066da7a1/source/library/gfx1250/TensileLibrary_gfx1250.co
+Tensor name a init mode TrigSin
+Tensor name b init mode TrigCos
+Tensor name c init mode TrigSin
+Tensor name d init mode TrigSin
+Tensor name e init mode Zero
+Tensor name bias init mode Random
+Tensor name scaleA init mode Two
+Tensor name scaleB init mode Two
+Tensor name scaleC init mode Two
+Tensor name scaleD init mode Two
+Tensor name scaleAlphaVec init mode TrigSin
+Tensor name metadata init mode Zero
+Tensor name Synchronizer init mode Zero
+Tensor name  init mode Zero
+Tensor name compressed init mode Zero
+Tensor name  init mode Zero
+Tensor name  init mode Zero
+Tensor name  init mode Zero
+constant name alpha init mode One
+constant name beta init mode One
+constant name activation-alpha init mode Free
+constant name activation-beta init mode Free
+Log level: Debug

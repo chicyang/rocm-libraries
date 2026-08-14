@@ -1,0 +1,104 @@
+[ 3077.537952] INFO: task tensilelite-cli:286796 blocked for more than 122 seconds.
+[ 3077.546545]       Tainted: G     U  W  OE      6.8.0-134-generic #134-Ubuntu
+[ 3077.554694] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[ 3077.563704] task:tensilelite-cli state:D stack:0     pid:286796 tgid:286796 ppid:285799 flags:0x00000002
+[ 3077.563709] Call Trace:
+[ 3077.563711]  <TASK>
+[ 3077.563716]  __schedule+0x27c/0x6b0
+[ 3077.563723]  schedule+0x33/0x110
+[ 3077.563724]  schedule_preempt_disabled+0x15/0x30
+[ 3077.563726]  __mutex_lock.constprop.0+0x42f/0x740
+[ 3077.563729]  __mutex_lock_slowpath+0x13/0x20
+[ 3077.563731]  mutex_lock+0x3c/0x50
+[ 3077.563735]  amdgpu_mes_reg_write_reg_wait+0x7f/0x140 [amdgpu]
+[ 3077.563960]  amdgpu_gmc_fw_reg_write_reg_wait+0x1e8/0x250 [amdgpu]
+[ 3077.564161]  gmc_v12_1_flush_gpu_tlb+0x2b9/0x480 [amdgpu]
+[ 3077.564365]  amdgpu_gmc_flush_gpu_tlb+0x129/0x2e0 [amdgpu]
+[ 3077.564557]  amdgpu_gart_invalidate_tlb.part.0+0x56/0xc0 [amdgpu]
+[ 3077.564739]  amdgpu_gart_invalidate_tlb+0x18/0x30 [amdgpu]
+[ 3077.564922]  amdgpu_ttm_alloc_gart+0x15f/0x1a0 [amdgpu]
+[ 3077.565104]  amdgpu_amdkfd_alloc_kernel_mem+0x115/0x2c0 [amdgpu]
+[ 3077.565327]  ? __pfx_amdgpu_bo_destroy+0x10/0x10 [amdgpu]
+[ 3077.565512]  kfd_dbg_set_mes_debug_mode+0xfc/0x160 [amdgpu]
+[ 3077.565736]  kfd_ioctl_runtime_enable+0xc5/0x490 [amdgpu]
+[ 3077.565951]  ? __check_object_size.part.0+0x3a/0x150
+[ 3077.565956]  kfd_ioctl+0x464/0x5e0 [amdgpu]
+[ 3077.566176]  ? __pfx_kfd_ioctl_runtime_enable+0x10/0x10 [amdgpu]
+[ 3077.566389]  __x64_sys_ioctl+0xa0/0xf0
+[ 3077.566395]  x64_sys_call+0x12a3/0x25a0
+[ 3077.566399]  do_syscall_64+0x7f/0x180
+[ 3077.566402]  ? kernel_mbind+0xeb/0x100
+[ 3077.566406]  ? arch_exit_to_user_mode_prepare.isra.0+0x1a/0xe0
+[ 3077.566409]  ? syscall_exit_to_user_mode+0x43/0x1e0
+[ 3077.566412]  ? do_syscall_64+0x8c/0x180
+[ 3077.566414]  ? arch_exit_to_user_mode_prepare.isra.0+0x1a/0xe0
+[ 3077.566415]  ? syscall_exit_to_user_mode+0x43/0x1e0
+[ 3077.566416]  ? do_syscall_64+0x8c/0x180
+[ 3077.566417]  ? __vm_munmap+0xc9/0x180
+[ 3077.566421]  ? arch_exit_to_user_mode_prepare.isra.0+0x1a/0xe0
+[ 3077.566422]  ? syscall_exit_to_user_mode+0x43/0x1e0
+[ 3077.566424]  ? do_syscall_64+0x8c/0x180
+[ 3077.566425]  ? do_syscall_64+0x8c/0x180
+[ 3077.566426]  ? syscall_exit_to_user_mode+0x43/0x1e0
+[ 3077.566428]  ? do_syscall_64+0x8c/0x180
+[ 3077.566429]  ? irqentry_exit+0x43/0x50
+[ 3077.566430]  ? exc_page_fault+0x94/0x1b0
+[ 3077.566432]  entry_SYSCALL_64_after_hwframe+0x78/0x80
+[ 3077.566435] RIP: 0033:0x7f9852bf2e1d
+[ 3077.566465] RSP: 002b:00007ffe94486bd0 EFLAGS: 00000246 ORIG_RAX: 0000000000000010
+[ 3077.566467] RAX: ffffffffffffffda RBX: 00007ffe94486c68 RCX: 00007f9852bf2e1d
+[ 3077.566468] RDX: 00007ffe94486c68 RSI: 00000000c0104b25 RDI: 0000000000000005
+[ 3077.566468] RBP: 00007ffe94486c20 R08: 00007ffe94486a58 R09: 0000579e210f8d01
+[ 3077.566469] R10: 0000000000000001 R11: 0000000000000246 R12: 00007f9851e5bdb8
+[ 3077.566469] R13: 00007ffe94487208 R14: 00000000c0104b25 R15: 0000579e210ee9d0
+[ 3077.566471]  </TASK>
+[ 3077.566474] INFO: task tensilelite-cli:289507 blocked for more than 122 seconds.
+[ 3077.574998]       Tainted: G     U  W  OE      6.8.0-134-generic #134-Ubuntu
+[ 3077.583123] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[ 3077.592119] task:tensilelite-cli state:D stack:0     pid:289507 tgid:289507 ppid:289506 flags:0x00004006
+[ 3077.592123] Call Trace:
+[ 3077.592124]  <TASK>
+[ 3077.592126]  __schedule+0x27c/0x6b0
+[ 3077.592130]  schedule+0x33/0x110
+[ 3077.592132]  schedule_preempt_disabled+0x15/0x30
+[ 3077.592133]  __mutex_lock.constprop.0+0x42f/0x740
+[ 3077.592140]  __mutex_lock_slowpath+0x13/0x20
+[ 3077.592144]  mutex_lock+0x3c/0x50
+[ 3077.592147]  amdgpu_mes_reg_write_reg_wait+0x7f/0x140 [amdgpu]
+[ 3077.592357]  amdgpu_gmc_fw_reg_write_reg_wait+0x1e8/0x250 [amdgpu]
+[ 3077.592548]  gmc_v12_1_flush_gpu_tlb+0x2b9/0x480 [amdgpu]
+[ 3077.592746]  amdgpu_gmc_flush_gpu_tlb+0x129/0x2e0 [amdgpu]
+[ 3077.592936]  amdgpu_gart_invalidate_tlb.part.0+0x56/0xc0 [amdgpu]
+[ 3077.593119]  amdgpu_gart_invalidate_tlb+0x18/0x30 [amdgpu]
+[ 3077.593306]  amdgpu_ttm_alloc_gart+0x15f/0x1a0 [amdgpu]
+[ 3077.593488]  amdgpu_amdkfd_alloc_kernel_mem+0x115/0x2c0 [amdgpu]
+[ 3077.593698]  ? __pfx_amdgpu_bo_destroy+0x10/0x10 [amdgpu]
+[ 3077.593879]  kfd_dbg_set_mes_debug_mode+0xfc/0x160 [amdgpu]
+[ 3077.594100]  kfd_ioctl_runtime_enable+0xc5/0x490 [amdgpu]
+[ 3077.594317]  ? __check_object_size.part.0+0x3a/0x150
+[ 3077.594322]  kfd_ioctl+0x464/0x5e0 [amdgpu]
+[ 3077.594535]  ? __pfx_kfd_ioctl_runtime_enable+0x10/0x10 [amdgpu]
+[ 3077.594749]  __x64_sys_ioctl+0xa0/0xf0
+[ 3077.594753]  x64_sys_call+0x12a3/0x25a0
+[ 3077.594757]  do_syscall_64+0x7f/0x180
+[ 3077.594760]  ? syscall_exit_to_user_mode+0x43/0x1e0
+[ 3077.594762]  ? do_syscall_64+0x8c/0x180
+[ 3077.594763]  ? do_syscall_64+0x8c/0x180
+[ 3077.594765]  ? arch_exit_to_user_mode_prepare.isra.0+0x1a/0xe0
+[ 3077.594767]  ? syscall_exit_to_user_mode+0x43/0x1e0
+[ 3077.594769]  ? do_syscall_64+0x8c/0x180
+[ 3077.594770]  ? irqentry_exit+0x43/0x50
+[ 3077.594772]  ? exc_page_fault+0x94/0x1b0
+[ 3077.594774]  entry_SYSCALL_64_after_hwframe+0x78/0x80
+[ 3077.594776] RIP: 0033:0x7f3ca9924e1d
+[ 3077.594791] RSP: 002b:00007ffc09d9b340 EFLAGS: 00000246 ORIG_RAX: 0000000000000010
+[ 3077.594792] RAX: ffffffffffffffda RBX: 00007ffc09d9b3d8 RCX: 00007f3ca9924e1d
+[ 3077.594793] RDX: 00007ffc09d9b3d8 RSI: 00000000c0104b25 RDI: 0000000000000003
+[ 3077.594793] RBP: 00007ffc09d9b390 R08: 00007ffc09d9b1c8 R09: 00005b1f68fdc401
+[ 3077.594794] R10: 0000000000000001 R11: 0000000000000246 R12: 00007f3ca882ad48
+[ 3077.594795] R13: 00007ffc09d9b978 R14: 00000000c0104b25 R15: 00005b1f68fc55f0
+[ 3077.594796]  </TASK>
+[ 3141.068390] audit: type=1400 audit(1786687496.925:258): apparmor="AUDIT" operation="userns_create" class="namespace" info="Userns create - transitioning profile" profile="unconfined" pid=303448 comm="cursorsandbox" requested="userns_create" target="unprivileged_userns"
+[ 3141.069829] audit: type=1400 audit(1786687496.926:259): apparmor="DENIED" operation="capable" class="cap" profile="unprivileged_userns" pid=303448 comm="cursorsandbox" capability=21  capname="sys_admin"
+[ 3143.668969] audit: type=1400 audit(1786687499.526:260): apparmor="AUDIT" operation="userns_create" class="namespace" info="Userns create - transitioning profile" profile="unconfined" pid=303724 comm="cursorsandbox" requested="userns_create" target="unprivileged_userns"
+[ 3143.670418] audit: type=1400 audit(1786687499.527:261): apparmor="DENIED" operation="capable" class="cap" profile="unprivileged_userns" pid=303724 comm="cursorsandbox" capability=21  capname="sys_admin"

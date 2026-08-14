@@ -1,0 +1,370 @@
+loading config file case_001/repro_local/min_out/1_BenchmarkProblems/Cijk_Alik_Bljk_BBS_BH_Bias_HA_S_SAV_UserArgs_00/00_Final/caches/1e01066da7a1/source/ClientParameters.ini
+
+srand seed is set to 1786638951
+
+:3:rocdevice.cpp            :444 : 4455624510 us:  Initalizing runtime stack, Enumerated GPU agents = 1
+:3:rocdevice.cpp            :188 : 4455624880 us:  Numa selects cpu agent[0]=0x610b904967f0(fine=0x610b9049e200,coarse=0x610b904aa3e0) for gpu agent=0x610b904b0040 CPU<->GPU XGMI=1
+:3:comgrctx.cpp             :89  : 4455624917 us:  Loaded COMGR library version 3.3.
+:3:rocdevice.cpp            :1684: 4455624994 us:  addressableNumVGPRs=1024, totalNumVGPRs=1024, vGPRAllocGranule=16, availableRegistersPerCU_=131072
+:3:rocdevice.cpp            :1695: 4455625008 us:  imageSupport=0
+:3:rocdevice.cpp            :1742: 4455625012 us:  Gfx Major/Minor/Stepping: 12/5/0, Device ID: 0x75c1
+:3:rocdevice.cpp            :1743: 4455625014 us:  Using dev kernel arg wa = 1
+:3:rocdevice.cpp            :1745: 4455625015 us:  HMM support: 1, XNACK: 0, Direct host access: 1
+:3:rocdevice.cpp            :1747: 4455625016 us:  Max SDMA Read Mask: 0xffff, Max SDMA Write Mask: 0xffff
+:3:runtime.cpp              :70  : 4455626029 us:  ROCclr version: 90992fca
+:3:hip_context.cpp          :42  : 4455626036 us:  HIP Version: 7.15.0, Direct Dispatch: 1
+:3:os_posix.cpp             :1024: 4455626041 us:  Runtime Library Path: /opt/rocm/lib/libamdhip64.so.7
+:3:hip_device_runtime.cpp   :710 : 4455626069 us:  [32m hipGetDeviceCount ( 0x7ffe1f62d800 ) [0m
+:3:hip_device_runtime.cpp   :712 : 4455626074 us:  hipGetDeviceCount: Returned hipSuccess : 
+:3:hip_device_runtime.cpp   :780 : 4455626080 us:  [32m hipSetDevice ( 0 ) [0m
+:3:hip_device_runtime.cpp   :793 : 4455626082 us:  hipSetDevice: Returned hipSuccess : 
+:3:hip_device_runtime.cpp   :694 : 4455626087 us:  [32m hipGetDevice ( 0x7ffe1f62d63c ) [0m
+:3:hip_device_runtime.cpp   :706 : 4455626089 us:  hipGetDevice: Returned hipSuccess : 0
+:3:hip_device.cpp           :762 : 4455626093 us:  [32m hipGetDevicePropertiesR0600 ( 0x7ffe1f62d048, 0 ) [0m
+:3:hip_device.cpp           :764 : 4455626097 us:  hipGetDevicePropertiesR0600: Returned hipSuccess : 
+:3:hip_context.cpp          :207 : 4455626099 us:  [32m hipRuntimeGetVersion ( 0x7ffe1f62ceac ) [0m
+:3:hip_context.cpp          :216 : 4455626100 us:  hipRuntimeGetVersion: Returned hipSuccess : 
+:3:hip_device_runtime.cpp   :147 : 4455626107 us:  [32m hipDeviceGetAttribute ( 0x7ffe1f62d1cc, 10015, 0 ) [0m
+:3:hip_device_runtime.cpp   :466 : 4455626110 us:  hipDeviceGetAttribute: Returned hipSuccess : 
+:3:hip_device_runtime.cpp   :147 : 4455626124 us:  [32m hipDeviceGetAttribute ( 0x7ffe1f62c55c, 10018, 0 ) [0m
+:3:hip_device_runtime.cpp   :466 : 4455626127 us:  hipDeviceGetAttribute: Returned hipSuccess : 
+:3:hip_stream.cpp           :293 : 4455626138 us:  [32m hipStreamCreate ( 0x7ffe1f62d808 ) [0m
+:3:rocdevice.cpp            :3287: 4455626147 us:  Number of allocated hardware queues with low priority: 0, with normal priority: 0, with high priority: 0, maximum per priority is: 4
+:3:rocdevice.cpp            :3363: 4455642491 us:  Created SWq=0x7da12481a000 to map on HWq=0x7da114c00000 with size 16384 with priority 1, cooperative: 0
+:3:rocdevice.cpp            :3482: 4455642508 us:  acquireQueue refCount: 0x7da114c00000 (1) 
+:3:hip_stream.cpp           :299 : 4455651473 us:  hipStreamCreate: Returned hipSuccess : 0x610b904aa7f0
+:3:hip_device_runtime.cpp   :694 : 4455651746 us:  [32m hipGetDevice ( 0x7ffe1f62cecc ) [0m
+:3:hip_device_runtime.cpp   :706 : 4455651752 us:  hipGetDevice: Returned hipSuccess : 0
+:3:hip_device.cpp           :762 : 4455651755 us:  [32m hipGetDevicePropertiesR0600 ( 0x7ffe1f62c8d8, 0 ) [0m
+:3:hip_device.cpp           :764 : 4455651758 us:  hipGetDevicePropertiesR0600: Returned hipSuccess : 
+:3:hip_context.cpp          :207 : 4455651759 us:  [32m hipRuntimeGetVersion ( 0x7ffe1f62c73c ) [0m
+:3:hip_context.cpp          :216 : 4455651761 us:  hipRuntimeGetVersion: Returned hipSuccess : 
+:3:hip_device_runtime.cpp   :147 : 4455651763 us:  [32m hipDeviceGetAttribute ( 0x7ffe1f62ca5c, 10015, 0 ) [0m
+:3:hip_device_runtime.cpp   :466 : 4455651769 us:  hipDeviceGetAttribute: Returned hipSuccess : 
+:3:hip_device_runtime.cpp   :147 : 4455651773 us:  [32m hipDeviceGetAttribute ( 0x7ffe1f62bdec, 10018, 0 ) [0m
+:3:hip_device_runtime.cpp   :466 : 4455651774 us:  hipDeviceGetAttribute: Returned hipSuccess : 
+:3:hip_device_runtime.cpp   :694 : 4455651828 us:  [32m hipGetDevice ( 0x7ffe1f62ce1c ) [0m
+:3:hip_device_runtime.cpp   :706 : 4455651831 us:  hipGetDevice: Returned hipSuccess : 0
+:3:hip_device.cpp           :762 : 4455651833 us:  [32m hipGetDevicePropertiesR0600 ( 0x7ffe1f62c828, 0 ) [0m
+:3:hip_device.cpp           :764 : 4455651834 us:  hipGetDevicePropertiesR0600: Returned hipSuccess : 
+:3:hip_context.cpp          :207 : 4455651836 us:  [32m hipRuntimeGetVersion ( 0x7ffe1f62c68c ) [0m
+:3:hip_context.cpp          :216 : 4455651837 us:  hipRuntimeGetVersion: Returned hipSuccess : 
+:3:hip_device_runtime.cpp   :147 : 4455651838 us:  [32m hipDeviceGetAttribute ( 0x7ffe1f62c9ac, 10015, 0 ) [0m
+:3:hip_device_runtime.cpp   :466 : 4455651840 us:  hipDeviceGetAttribute: Returned hipSuccess : 
+:3:hip_device_runtime.cpp   :147 : 4455651842 us:  [32m hipDeviceGetAttribute ( 0x7ffe1f62bd3c, 10018, 0 ) [0m
+:3:hip_device_runtime.cpp   :466 : 4455651844 us:  hipDeviceGetAttribute: Returned hipSuccess : 
+Loading /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/case_001/repro_local/min_out/1_BenchmarkProblems/Cijk_Alik_Bljk_BBS_BH_Bias_HA_S_SAV_UserArgs_00/00_Final/caches/1e01066da7a1/source/library/gfx1250/TensileLibrary_gfx1250.co
+:3:hip_module.cpp           :66  : 4455651874 us:  [32m hipModuleLoad ( 0x7ffe1f62d748, /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/case_001/repro_local/min_out/1_BenchmarkProblems/Cijk_Alik_Bljk_BBS_BH_Bias_HA_S_SAV_UserArgs_00/00_Final/caches/1e01066da7a1/source/library/gfx1250/TensileLibrary_gfx1250.co ) [0m
+:3:hip_module.cpp           :68  : 4455653431 us:  hipModuleLoad: Returned hipSuccess : 
+:3:hip_module.cpp           :66  : 4455653452 us:  [32m hipModuleLoad ( 0x7ffe1f62d868, /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/case_001/repro_local/min_out/1_BenchmarkProblems/Cijk_Alik_Bljk_BBS_BH_Bias_HA_S_SAV_UserArgs_00/00_Final/caches/1e01066da7a1/source/library/gfx1250/Kernels.so-000-gfx1250.hsaco ) [0m
+:3:hip_module.cpp           :68  : 4455656172 us:  hipModuleLoad: Returned hipSuccess : 
+:3:hip_device.cpp           :762 : 4455656192 us:  [32m hipGetDevicePropertiesR0600 ( 0x7ffe1f62d3c0, 0 ) [0m
+:3:hip_device.cpp           :764 : 4455656194 us:  hipGetDevicePropertiesR0600: Returned hipSuccess : 
+Tensor name a init mode TrigSin
+Tensor name b init mode TrigCos
+Tensor name c init mode TrigSin
+Tensor name d init mode TrigSin
+Tensor name e init mode Zero
+Tensor name bias init mode Random
+Tensor name scaleA init mode Two
+Tensor name scaleB init mode Two
+Tensor name scaleC init mode Two
+Tensor name scaleD init mode Two
+Tensor name scaleAlphaVec init mode TrigSin
+Tensor name metadata init mode Zero
+Tensor name Synchronizer init mode Zero
+Tensor name  init mode Zero
+Tensor name compressed init mode Zero
+Tensor name  init mode Zero
+Tensor name  init mode Zero
+Tensor name  init mode Zero
+constant name alpha init mode One
+constant name beta init mode One
+constant name activation-alpha init mode Free
+constant name activation-beta init mode Free
+:3:hip_memory.cpp           :848 : 4455656309 us:  [32m hipMalloc ( 0x7ffe1f62cbf0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656335 us:  Device=0x610b904c3720, freeMem_ = 0x6bffe00000
+:3:hip_memory.cpp           :850 : 4455656339 us:  hipMalloc: Returned hipSuccess : 0x7da10de00000: duration: 30 us
+:3:hip_memory.cpp           :848 : 4455656347 us:  [32m hipMalloc ( 0x7ffe1f62c9b0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656358 us:  Device=0x610b904c3720, freeMem_ = 0x6bffc00000
+:3:hip_memory.cpp           :850 : 4455656360 us:  hipMalloc: Returned hipSuccess : 0x7da10da00000: duration: 13 us
+:3:hip_memory.cpp           :848 : 4455656362 us:  [32m hipMalloc ( 0x7ffe1f62c9b0, 8 ) [0m
+:3:rocdevice.cpp            :2444: 4455656380 us:  Device=0x610b904c3720, freeMem_ = 0x6bffbffff8
+:3:hip_memory.cpp           :850 : 4455656383 us:  hipMalloc: Returned hipSuccess : 0x7da10d600000: duration: 21 us
+:3:hip_memory.cpp           :848 : 4455656386 us:  [32m hipMalloc ( 0x7ffe1f62cbf0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656396 us:  Device=0x610b904c3720, freeMem_ = 0x6bff9ffff8
+:3:hip_memory.cpp           :850 : 4455656399 us:  hipMalloc: Returned hipSuccess : 0x7da10d200000: duration: 13 us
+:3:hip_memory.cpp           :848 : 4455656402 us:  [32m hipMalloc ( 0x7ffe1f62c9b0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656414 us:  Device=0x610b904c3720, freeMem_ = 0x6bff7ffff8
+:3:hip_memory.cpp           :850 : 4455656417 us:  hipMalloc: Returned hipSuccess : 0x7da10ce00000: duration: 15 us
+:3:hip_memory.cpp           :848 : 4455656419 us:  [32m hipMalloc ( 0x7ffe1f62cbf0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656431 us:  Device=0x610b904c3720, freeMem_ = 0x6bff5ffff8
+:3:hip_memory.cpp           :850 : 4455656433 us:  hipMalloc: Returned hipSuccess : 0x7da10ca00000: duration: 14 us
+:3:hip_memory.cpp           :848 : 4455656435 us:  [32m hipMalloc ( 0x7ffe1f62c9b0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656449 us:  Device=0x610b904c3720, freeMem_ = 0x6bff3ffff8
+:3:hip_memory.cpp           :850 : 4455656452 us:  hipMalloc: Returned hipSuccess : 0x7da10c600000: duration: 17 us
+:3:hip_memory.cpp           :848 : 4455656455 us:  [32m hipMalloc ( 0x7ffe1f62cbf0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656468 us:  Device=0x610b904c3720, freeMem_ = 0x6bff1ffff8
+:3:hip_memory.cpp           :850 : 4455656471 us:  hipMalloc: Returned hipSuccess : 0x7da10c200000: duration: 16 us
+:3:hip_memory.cpp           :848 : 4455656473 us:  [32m hipMalloc ( 0x7ffe1f62c9b0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656486 us:  Device=0x610b904c3720, freeMem_ = 0x6bfefffff8
+:3:hip_memory.cpp           :850 : 4455656489 us:  hipMalloc: Returned hipSuccess : 0x7d90eb600000: duration: 16 us
+:3:hip_memory.cpp           :848 : 4455656491 us:  [32m hipMalloc ( 0x7ffe1f62c9b0, 8 ) [0m
+:3:rocdevice.cpp            :2444: 4455656494 us:  Device=0x610b904c3720, freeMem_ = 0x6bfefffff0
+:3:hip_memory.cpp           :850 : 4455656495 us:  hipMalloc: Returned hipSuccess : 0x7da10d601000: duration: 4 us
+:3:hip_memory.cpp           :848 : 4455656497 us:  [32m hipMalloc ( 0x7ffe1f62cbf0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656509 us:  Device=0x610b904c3720, freeMem_ = 0x6bfedffff0
+:3:hip_memory.cpp           :850 : 4455656512 us:  hipMalloc: Returned hipSuccess : 0x7d90eb200000: duration: 15 us
+:3:hip_memory.cpp           :848 : 4455656513 us:  [32m hipMalloc ( 0x7ffe1f62c9b0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656535 us:  Device=0x610b904c3720, freeMem_ = 0x6bfebffff0
+:3:hip_memory.cpp           :850 : 4455656539 us:  hipMalloc: Returned hipSuccess : 0x7d90eae00000: duration: 26 us
+:3:hip_memory.cpp           :848 : 4455656541 us:  [32m hipMalloc ( 0x7ffe1f62cbf0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656552 us:  Device=0x610b904c3720, freeMem_ = 0x6bfe9ffff0
+:3:hip_memory.cpp           :850 : 4455656554 us:  hipMalloc: Returned hipSuccess : 0x7d90eaa00000: duration: 13 us
+:3:hip_memory.cpp           :848 : 4455656556 us:  [32m hipMalloc ( 0x7ffe1f62c9b0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656566 us:  Device=0x610b904c3720, freeMem_ = 0x6bfe7ffff0
+:3:hip_memory.cpp           :850 : 4455656569 us:  hipMalloc: Returned hipSuccess : 0x7d90ea600000: duration: 13 us
+:3:hip_memory.cpp           :848 : 4455656572 us:  [32m hipMalloc ( 0x7ffe1f62cbf0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656583 us:  Device=0x610b904c3720, freeMem_ = 0x6bfe5ffff0
+:3:hip_memory.cpp           :850 : 4455656586 us:  hipMalloc: Returned hipSuccess : 0x7d90ea200000: duration: 14 us
+:3:hip_memory.cpp           :848 : 4455656588 us:  [32m hipMalloc ( 0x7ffe1f62c9b0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656604 us:  Device=0x610b904c3720, freeMem_ = 0x6bfe3ffff0
+:3:hip_memory.cpp           :850 : 4455656608 us:  hipMalloc: Returned hipSuccess : 0x7d90e9e00000: duration: 20 us
+:3:hip_memory.cpp           :848 : 4455656609 us:  [32m hipMalloc ( 0x7ffe1f62c9b0, 8 ) [0m
+:3:rocdevice.cpp            :2444: 4455656611 us:  Device=0x610b904c3720, freeMem_ = 0x6bfe3fffe8
+:3:hip_memory.cpp           :850 : 4455656613 us:  hipMalloc: Returned hipSuccess : 0x7da10d602000: duration: 4 us
+:3:hip_memory.cpp           :848 : 4455656615 us:  [32m hipMalloc ( 0x7ffe1f62cbf0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656626 us:  Device=0x610b904c3720, freeMem_ = 0x6bfe1fffe8
+:3:hip_memory.cpp           :850 : 4455656629 us:  hipMalloc: Returned hipSuccess : 0x7d90e9a00000: duration: 14 us
+:3:hip_memory.cpp           :848 : 4455656632 us:  [32m hipMalloc ( 0x7ffe1f62c9b0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656643 us:  Device=0x610b904c3720, freeMem_ = 0x6bfdffffe8
+:3:hip_memory.cpp           :850 : 4455656645 us:  hipMalloc: Returned hipSuccess : 0x7d90e9600000: duration: 13 us
+:3:hip_memory.cpp           :848 : 4455656648 us:  [32m hipMalloc ( 0x7ffe1f62cbf0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656666 us:  Device=0x610b904c3720, freeMem_ = 0x6bfddfffe8
+:3:hip_memory.cpp           :850 : 4455656670 us:  hipMalloc: Returned hipSuccess : 0x7d90e9200000: duration: 22 us
+:3:hip_memory.cpp           :848 : 4455656672 us:  [32m hipMalloc ( 0x7ffe1f62c9b0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656681 us:  Device=0x610b904c3720, freeMem_ = 0x6bfdbfffe8
+:3:hip_memory.cpp           :850 : 4455656684 us:  hipMalloc: Returned hipSuccess : 0x7d90e8e00000: duration: 12 us
+:3:hip_memory.cpp           :848 : 4455656686 us:  [32m hipMalloc ( 0x7ffe1f62cbf0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656696 us:  Device=0x610b904c3720, freeMem_ = 0x6bfd9fffe8
+:3:hip_memory.cpp           :850 : 4455656699 us:  hipMalloc: Returned hipSuccess : 0x7d90e8a00000: duration: 13 us
+:3:hip_memory.cpp           :848 : 4455656701 us:  [32m hipMalloc ( 0x7ffe1f62c9b0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656711 us:  Device=0x610b904c3720, freeMem_ = 0x6bfd7fffe8
+:3:hip_memory.cpp           :850 : 4455656714 us:  hipMalloc: Returned hipSuccess : 0x7d90e8600000: duration: 13 us
+:3:hip_memory.cpp           :848 : 4455656716 us:  [32m hipMalloc ( 0x7ffe1f62c9b0, 8 ) [0m
+:3:rocdevice.cpp            :2444: 4455656719 us:  Device=0x610b904c3720, freeMem_ = 0x6bfd7fffe0
+:3:hip_memory.cpp           :850 : 4455656720 us:  hipMalloc: Returned hipSuccess : 0x7da10d603000: duration: 4 us
+:3:hip_memory.cpp           :848 : 4455656722 us:  [32m hipMalloc ( 0x7ffe1f62cbf0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656735 us:  Device=0x610b904c3720, freeMem_ = 0x6bfd5fffe0
+:3:hip_memory.cpp           :850 : 4455656738 us:  hipMalloc: Returned hipSuccess : 0x7d90e8200000: duration: 16 us
+:3:hip_memory.cpp           :848 : 4455656740 us:  [32m hipMalloc ( 0x7ffe1f62c9b0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656751 us:  Device=0x610b904c3720, freeMem_ = 0x6bfd3fffe0
+:3:hip_memory.cpp           :850 : 4455656754 us:  hipMalloc: Returned hipSuccess : 0x7d90e7e00000: duration: 14 us
+:3:hip_memory.cpp           :848 : 4455656756 us:  [32m hipMalloc ( 0x7ffe1f62cbf0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656768 us:  Device=0x610b904c3720, freeMem_ = 0x6bfd1fffe0
+:3:hip_memory.cpp           :850 : 4455656772 us:  hipMalloc: Returned hipSuccess : 0x7d90e7a00000: duration: 16 us
+:3:hip_memory.cpp           :848 : 4455656773 us:  [32m hipMalloc ( 0x7ffe1f62c9b0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656790 us:  Device=0x610b904c3720, freeMem_ = 0x6bfcffffe0
+:3:hip_memory.cpp           :850 : 4455656794 us:  hipMalloc: Returned hipSuccess : 0x7d90e7600000: duration: 21 us
+:3:hip_memory.cpp           :848 : 4455656796 us:  [32m hipMalloc ( 0x7ffe1f62cbf0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656807 us:  Device=0x610b904c3720, freeMem_ = 0x6bfcdfffe0
+:3:hip_memory.cpp           :850 : 4455656809 us:  hipMalloc: Returned hipSuccess : 0x7d90e7200000: duration: 13 us
+:3:hip_memory.cpp           :848 : 4455656812 us:  [32m hipMalloc ( 0x7ffe1f62c9b0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656822 us:  Device=0x610b904c3720, freeMem_ = 0x6bfcbfffe0
+:3:hip_memory.cpp           :850 : 4455656824 us:  hipMalloc: Returned hipSuccess : 0x7d90e6e00000: duration: 12 us
+:3:hip_memory.cpp           :848 : 4455656827 us:  [32m hipMalloc ( 0x7ffe1f62c9b0, 8 ) [0m
+:3:rocdevice.cpp            :2444: 4455656829 us:  Device=0x610b904c3720, freeMem_ = 0x6bfcbfffd8
+:3:hip_memory.cpp           :850 : 4455656830 us:  hipMalloc: Returned hipSuccess : 0x7da10d604000: duration: 3 us
+:3:hip_memory.cpp           :848 : 4455656832 us:  [32m hipMalloc ( 0x7ffe1f62cbf0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656842 us:  Device=0x610b904c3720, freeMem_ = 0x6bfc9fffd8
+:3:hip_memory.cpp           :850 : 4455656845 us:  hipMalloc: Returned hipSuccess : 0x7d90e6a00000: duration: 13 us
+:3:hip_memory.cpp           :848 : 4455656847 us:  [32m hipMalloc ( 0x7ffe1f62c9b0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656860 us:  Device=0x610b904c3720, freeMem_ = 0x6bfc7fffd8
+:3:hip_memory.cpp           :850 : 4455656862 us:  hipMalloc: Returned hipSuccess : 0x7d90e6600000: duration: 15 us
+:3:hip_memory.cpp           :848 : 4455656864 us:  [32m hipMalloc ( 0x7ffe1f62cbf0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656881 us:  Device=0x610b904c3720, freeMem_ = 0x6bfc5fffd8
+:3:hip_memory.cpp           :850 : 4455656885 us:  hipMalloc: Returned hipSuccess : 0x7d90e6200000: duration: 21 us
+:3:hip_memory.cpp           :848 : 4455656887 us:  [32m hipMalloc ( 0x7ffe1f62c9b0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656898 us:  Device=0x610b904c3720, freeMem_ = 0x6bfc3fffd8
+:3:hip_memory.cpp           :850 : 4455656901 us:  hipMalloc: Returned hipSuccess : 0x7d90e5e00000: duration: 14 us
+:3:hip_memory.cpp           :848 : 4455656904 us:  [32m hipMalloc ( 0x7ffe1f62cbf0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656920 us:  Device=0x610b904c3720, freeMem_ = 0x6bfc1fffd8
+:3:hip_memory.cpp           :850 : 4455656923 us:  hipMalloc: Returned hipSuccess : 0x7d90e5a00000: duration: 19 us
+:3:hip_memory.cpp           :848 : 4455656924 us:  [32m hipMalloc ( 0x7ffe1f62c9b0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656936 us:  Device=0x610b904c3720, freeMem_ = 0x6bfbffffd8
+:3:hip_memory.cpp           :850 : 4455656938 us:  hipMalloc: Returned hipSuccess : 0x7d90e5600000: duration: 14 us
+:3:hip_memory.cpp           :848 : 4455656941 us:  [32m hipMalloc ( 0x7ffe1f62c9b0, 8 ) [0m
+:3:rocdevice.cpp            :2444: 4455656943 us:  Device=0x610b904c3720, freeMem_ = 0x6bfbffffd0
+:3:hip_memory.cpp           :850 : 4455656945 us:  hipMalloc: Returned hipSuccess : 0x7da10d605000: duration: 4 us
+:3:hip_memory.cpp           :848 : 4455656946 us:  [32m hipMalloc ( 0x7ffe1f62cbf0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656959 us:  Device=0x610b904c3720, freeMem_ = 0x6bfbdfffd0
+:3:hip_memory.cpp           :850 : 4455656961 us:  hipMalloc: Returned hipSuccess : 0x7d90e5200000: duration: 15 us
+:3:hip_memory.cpp           :848 : 4455656963 us:  [32m hipMalloc ( 0x7ffe1f62c9b0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656973 us:  Device=0x610b904c3720, freeMem_ = 0x6bfbbfffd0
+:3:hip_memory.cpp           :850 : 4455656976 us:  hipMalloc: Returned hipSuccess : 0x7d90e4e00000: duration: 13 us
+:3:hip_memory.cpp           :848 : 4455656978 us:  [32m hipMalloc ( 0x7ffe1f62cbf0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455656992 us:  Device=0x610b904c3720, freeMem_ = 0x6bfb9fffd0
+:3:hip_memory.cpp           :850 : 4455656995 us:  hipMalloc: Returned hipSuccess : 0x7d90e4a00000: duration: 17 us
+:3:hip_memory.cpp           :848 : 4455656998 us:  [32m hipMalloc ( 0x7ffe1f62c9b0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455657016 us:  Device=0x610b904c3720, freeMem_ = 0x6bfb7fffd0
+:3:hip_memory.cpp           :850 : 4455657021 us:  hipMalloc: Returned hipSuccess : 0x7d90e4600000: duration: 23 us
+:3:hip_memory.cpp           :848 : 4455657024 us:  [32m hipMalloc ( 0x7ffe1f62cbf0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455657035 us:  Device=0x610b904c3720, freeMem_ = 0x6bfb5fffd0
+:3:hip_memory.cpp           :850 : 4455657037 us:  hipMalloc: Returned hipSuccess : 0x7d90e4200000: duration: 13 us
+:3:hip_memory.cpp           :848 : 4455657040 us:  [32m hipMalloc ( 0x7ffe1f62c9b0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455657054 us:  Device=0x610b904c3720, freeMem_ = 0x6bfb3fffd0
+:3:hip_memory.cpp           :850 : 4455657058 us:  hipMalloc: Returned hipSuccess : 0x7d90e3e00000: duration: 18 us
+:3:hip_memory.cpp           :848 : 4455657060 us:  [32m hipMalloc ( 0x7ffe1f62c9b0, 8 ) [0m
+:3:rocdevice.cpp            :2444: 4455657061 us:  Device=0x610b904c3720, freeMem_ = 0x6bfb3fffc8
+:3:hip_memory.cpp           :850 : 4455657063 us:  hipMalloc: Returned hipSuccess : 0x7da10d606000: duration: 3 us
+:3:hip_memory.cpp           :848 : 4455657065 us:  [32m hipMalloc ( 0x7ffe1f62cbf0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455657076 us:  Device=0x610b904c3720, freeMem_ = 0x6bfb1fffc8
+:3:hip_memory.cpp           :850 : 4455657079 us:  hipMalloc: Returned hipSuccess : 0x7d90e3a00000: duration: 14 us
+:3:hip_memory.cpp           :848 : 4455657081 us:  [32m hipMalloc ( 0x7ffe1f62c9b0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455657091 us:  Device=0x610b904c3720, freeMem_ = 0x6bfaffffc8
+:3:hip_memory.cpp           :850 : 4455657094 us:  hipMalloc: Returned hipSuccess : 0x7d90e3600000: duration: 13 us
+:3:hip_memory.cpp           :848 : 4455657095 us:  [32m hipMalloc ( 0x7ffe1f62cbf0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455657105 us:  Device=0x610b904c3720, freeMem_ = 0x6bfadfffc8
+:3:hip_memory.cpp           :850 : 4455657108 us:  hipMalloc: Returned hipSuccess : 0x7d90e3200000: duration: 13 us
+:3:hip_memory.cpp           :848 : 4455657109 us:  [32m hipMalloc ( 0x7ffe1f62c9b0, 2097152 ) [0m
+:3:rocdevice.cpp            :2444: 4455657122 us:  Device=0x610b904c3720, freeMem_ = 0x6bfabfffc8
+:3:hip_memory.cpp           :850 : 4455657126 us:  hipMalloc: Returned hipSuccess : 0x7d90e2e00000: duration: 17 us
+:3:hip_memory.cpp           :848 : 4455657128 us:  [32m hipMalloc ( 0x7ffe1f62c9b0, 134217728 ) [0m
+:3:rocdevice.cpp            :2444: 4455657139 us:  Device=0x610b904c3720, freeMem_ = 0x6bf2bfffc8
+:3:hip_memory.cpp           :850 : 4455657141 us:  hipMalloc: Returned hipSuccess : 0x7d90dac00000: duration: 13 us
+:3:hip_device.cpp           :762 : 4455657161 us:  [32m hipGetDevicePropertiesR0600 ( 0x610b906492b0, 0 ) [0m
+:3:hip_device.cpp           :764 : 4455657165 us:  hipGetDevicePropertiesR0600: Returned hipSuccess : 
+:3:hip_context.cpp          :207 : 4455657167 us:  [32m hipRuntimeGetVersion ( 0x7ffe1f62d764 ) [0m
+:3:hip_context.cpp          :216 : 4455657168 us:  hipRuntimeGetVersion: Returned hipSuccess : 
+:3:hip_device_runtime.cpp   :147 : 4455657172 us:  [32m hipDeviceGetAttribute ( 0x610b90649434, 10015, 0 ) [0m
+:3:hip_device_runtime.cpp   :466 : 4455657173 us:  hipDeviceGetAttribute: Returned hipSuccess : 
+Log level: Debug
+:3:hip_device.cpp           :762 : 4455657225 us:  [32m hipGetDevicePropertiesR0600 ( 0x7ffe1f62d3f8, 0 ) [0m
+:3:hip_device.cpp           :764 : 4455657228 us:  hipGetDevicePropertiesR0600: Returned hipSuccess : 
+:3:hip_memory.cpp           :887 : 4455675587 us:  [32m hipMemcpy ( 0x7da10ce00000, 0x7da1141fe010, 2097152, hipMemcpyHostToDevice ) [0m
+:3:rocdevice.cpp            :3287: 4455675607 us:  Number of allocated hardware queues with low priority: 0, with normal priority: 1, with high priority: 0, maximum per priority is: 4
+:3:rocdevice.cpp            :3363: 4455686260 us:  Created SWq=0x7da124496000 to map on HWq=0x7d90c8200000 with size 16384 with priority 1, cooperative: 0
+:3:rocdevice.cpp            :3482: 4455686271 us:  acquireQueue refCount: 0x7d90c8200000 (1) 
+:3:rocdevice.cpp            :4183: 4455687518 us:  Assigned SDMA engine to VirtualGPU 0x610b9083d680: mask=0x1, engine_type=2, valid_mask=0xffff, preferred_mask=0x3, allocated_mask=0x0, is_inter_gpu=0
+:3:rocblit.cpp              :550 : 4455687525 us:  Allocated new SDMA engine for VirtualGPU 0x610b9083d680: mask=0x1, engine_type=2
+:3:hip_memory.cpp           :888 : 4455692781 us:  hipMemcpy: Returned hipSuccess : : duration: 17194 us
+:3:hip_memory.cpp           :887 : 4455692793 us:  [32m hipMemcpy ( 0x7d90eae00000, 0x7da10f5fe010, 2097152, hipMemcpyHostToDevice ) [0m
+:3:hip_memory.cpp           :888 : 4455693026 us:  hipMemcpy: Returned hipSuccess : : duration: 233 us
+:3:hip_memory.cpp           :887 : 4455693033 us:  [32m hipMemcpy ( 0x7d90e9600000, 0x7da10f1fc010, 2097152, hipMemcpyHostToDevice ) [0m
+:3:hip_memory.cpp           :888 : 4455693324 us:  hipMemcpy: Returned hipSuccess : : duration: 291 us
+:3:hip_memory.cpp           :887 : 4455693330 us:  [32m hipMemcpy ( 0x7d90e7e00000, 0x7da10edfa010, 2097152, hipMemcpyHostToDevice ) [0m
+:3:hip_memory.cpp           :888 : 4455693943 us:  hipMemcpy: Returned hipSuccess : : duration: 613 us
+:3:hip_memory.cpp           :887 : 4455693949 us:  [32m hipMemcpy ( 0x7d90e6600000, 0x7da10e9f8010, 2097152, hipMemcpyHostToDevice ) [0m
+:3:hip_memory.cpp           :888 : 4455694264 us:  hipMemcpy: Returned hipSuccess : : duration: 315 us
+:3:hip_memory.cpp           :887 : 4455694271 us:  [32m hipMemcpy ( 0x7d90e4e00000, 0x7da10e5f6010, 2097152, hipMemcpyHostToDevice ) [0m
+:3:hip_memory.cpp           :888 : 4455694580 us:  hipMemcpy: Returned hipSuccess : : duration: 309 us
+:3:hip_memory.cpp           :887 : 4455694586 us:  [32m hipMemcpy ( 0x7d90e3600000, 0x7da10e1f4010, 2097152, hipMemcpyHostToDevice ) [0m
+:3:hip_memory.cpp           :888 : 4455694719 us:  hipMemcpy: Returned hipSuccess : : duration: 133 us
+:3:hip_memory.cpp           :887 : 4455694726 us:  [32m hipMemcpy ( 0x7da10db80000, 0x7da10ce00000, 524288, hipMemcpyDeviceToDevice ) [0m
+:3:rocvirtual.cpp           :4439: 4455694742 us:  ShaderName : __amd_rocclr_copyBuffer
+:3:hip_memory.cpp           :888 : 4455694752 us:  hipMemcpy: Returned hipSuccess : : duration: 26 us
+:3:hip_memory.cpp           :887 : 4455694760 us:  [32m hipMemcpy ( 0x7d90eb740000, 0x7d90eae00000, 786432, hipMemcpyDeviceToDevice ) [0m
+:3:rocvirtual.cpp           :4439: 4455694765 us:  ShaderName : __amd_rocclr_copyBuffer
+:3:hip_memory.cpp           :888 : 4455694769 us:  hipMemcpy: Returned hipSuccess : : duration: 9 us
+:3:hip_memory.cpp           :887 : 4455694771 us:  [32m hipMemcpy ( 0x7d90e9fd0000, 0x7d90e9600000, 196608, hipMemcpyDeviceToDevice ) [0m
+:3:rocvirtual.cpp           :4439: 4455694776 us:  ShaderName : __amd_rocclr_copyBuffer
+:3:hip_memory.cpp           :888 : 4455694779 us:  hipMemcpy: Returned hipSuccess : : duration: 8 us
+:3:hip_memory.cpp           :887 : 4455694782 us:  [32m hipMemcpy ( 0x7d90e87d0000, 0x7d90e7e00000, 196608, hipMemcpyDeviceToDevice ) [0m
+:3:rocvirtual.cpp           :4439: 4455694787 us:  ShaderName : __amd_rocclr_copyBuffer
+:3:hip_memory.cpp           :888 : 4455694791 us:  hipMemcpy: Returned hipSuccess : : duration: 9 us
+:3:hip_memory.cpp           :887 : 4455694795 us:  [32m hipMemcpy ( 0x7d90e6fffe00, 0x7d90e6600000, 512, hipMemcpyDeviceToDevice ) [0m
+:3:rocvirtual.cpp           :4439: 4455694800 us:  ShaderName : __amd_rocclr_copyBuffer
+:3:hip_memory.cpp           :888 : 4455694804 us:  hipMemcpy: Returned hipSuccess : : duration: 9 us
+:3:hip_memory.cpp           :887 : 4455694807 us:  [32m hipMemcpy ( 0x7d90e57ffc00, 0x7d90e4e00000, 1024, hipMemcpyDeviceToDevice ) [0m
+:3:rocvirtual.cpp           :4439: 4455694811 us:  ShaderName : __amd_rocclr_copyBuffer
+:3:hip_memory.cpp           :888 : 4455694816 us:  hipMemcpy: Returned hipSuccess : : duration: 9 us
+:3:hip_memory.cpp           :887 : 4455694818 us:  [32m hipMemcpy ( 0x7d90e3e70000, 0x7d90e3600000, 1638400, hipMemcpyDeviceToDevice ) [0m
+:3:rocvirtual.cpp           :4439: 4455694822 us:  ShaderName : __amd_rocclr_copyBuffer
+:3:hip_memory.cpp           :888 : 4455694830 us:  hipMemcpy: Returned hipSuccess : : duration: 12 us
+:3:hip_memory.cpp           :887 : 4455694836 us:  [32m hipMemcpy ( 0x7da10d600000, 0x610b908448d0, 8, hipMemcpyHostToDevice ) [0m
+:3:rocvirtual.cpp           :4439: 4455694842 us:  ShaderName : __amd_rocclr_copyBuffer
+:3:hip_memory.cpp           :888 : 4455694854 us:  hipMemcpy: Returned hipSuccess : : duration: 18 us
+:3:hip_memory.cpp           :887 : 4455694859 us:  [32m hipMemcpy ( 0x7da10d601000, 0x610b908448d0, 8, hipMemcpyHostToDevice ) [0m
+:3:rocvirtual.cpp           :4439: 4455694863 us:  ShaderName : __amd_rocclr_copyBuffer
+:3:hip_memory.cpp           :888 : 4455694873 us:  hipMemcpy: Returned hipSuccess : : duration: 14 us
+:3:hip_memory.cpp           :887 : 4455694877 us:  [32m hipMemcpy ( 0x7da10d602000, 0x610b908448d0, 8, hipMemcpyHostToDevice ) [0m
+:3:rocvirtual.cpp           :4439: 4455694880 us:  ShaderName : __amd_rocclr_copyBuffer
+:3:hip_memory.cpp           :888 : 4455694890 us:  hipMemcpy: Returned hipSuccess : : duration: 13 us
+:3:hip_memory.cpp           :887 : 4455694894 us:  [32m hipMemcpy ( 0x7da10d603000, 0x610b908448d0, 8, hipMemcpyHostToDevice ) [0m
+:3:rocvirtual.cpp           :4439: 4455694897 us:  ShaderName : __amd_rocclr_copyBuffer
+:3:hip_memory.cpp           :888 : 4455694907 us:  hipMemcpy: Returned hipSuccess : : duration: 13 us
+:3:hip_memory.cpp           :887 : 4455694911 us:  [32m hipMemcpy ( 0x7da10d604000, 0x610b908448d0, 8, hipMemcpyHostToDevice ) [0m
+:3:rocvirtual.cpp           :4439: 4455694914 us:  ShaderName : __amd_rocclr_copyBuffer
+:3:hip_memory.cpp           :888 : 4455694924 us:  hipMemcpy: Returned hipSuccess : : duration: 13 us
+:3:hip_device_runtime.cpp   :678 : 4455694950 us:  [32m hipDeviceSynchronize (  ) [0m
+:3:rocvirtual.cpp           :816 : 4455694960 us:  Set Handler: handle(0x7da1175fa200), timestamp(0x610b90842b90), blocking CB=0
+:3:hip_device_runtime.cpp   :682 : 4455694972 us:  hipDeviceSynchronize: Returned hipSuccess : : duration: 22 us
+:3:rocvirtual.cpp           :486 : 4455694981 us:  Handler: value(0), timestamp(0x610b90845550), handle(0x7da1175fa200)
+:3:hip_memory.cpp           :887 : 4455695062 us:  [32m hipMemcpy ( 0x7da10ce00000, 0x7da1141fe010, 2097152, hipMemcpyHostToDevice ) [0m
+:3:rocdevice.cpp            :4183: 4455695078 us:  Assigned SDMA engine to VirtualGPU 0x610b9083d680: mask=0x1, engine_type=2, valid_mask=0xffff, preferred_mask=0x3, allocated_mask=0x0, is_inter_gpu=0
+:3:rocblit.cpp              :550 : 4455695082 us:  Allocated new SDMA engine for VirtualGPU 0x610b9083d680: mask=0x1, engine_type=2
+:3:hip_memory.cpp           :888 : 4455695130 us:  hipMemcpy: Returned hipSuccess : : duration: 68 us
+:3:hip_memory.cpp           :887 : 4455695134 us:  [32m hipMemcpy ( 0x7d90eae00000, 0x7da10f5fe010, 2097152, hipMemcpyHostToDevice ) [0m
+:3:hip_memory.cpp           :888 : 4455695184 us:  hipMemcpy: Returned hipSuccess : : duration: 50 us
+:3:hip_memory.cpp           :887 : 4455695188 us:  [32m hipMemcpy ( 0x7d90e9600000, 0x7da10f1fc010, 2097152, hipMemcpyHostToDevice ) [0m
+:3:hip_memory.cpp           :888 : 4455695239 us:  hipMemcpy: Returned hipSuccess : : duration: 51 us
+:3:hip_memory.cpp           :887 : 4455695243 us:  [32m hipMemcpy ( 0x7d90e7e00000, 0x7da10edfa010, 2097152, hipMemcpyHostToDevice ) [0m
+:3:hip_memory.cpp           :888 : 4455695293 us:  hipMemcpy: Returned hipSuccess : : duration: 50 us
+:3:hip_memory.cpp           :887 : 4455695297 us:  [32m hipMemcpy ( 0x7d90e6600000, 0x7da10e9f8010, 2097152, hipMemcpyHostToDevice ) [0m
+:3:hip_memory.cpp           :888 : 4455695345 us:  hipMemcpy: Returned hipSuccess : : duration: 48 us
+:3:hip_memory.cpp           :887 : 4455695349 us:  [32m hipMemcpy ( 0x7d90e4e00000, 0x7da10e5f6010, 2097152, hipMemcpyHostToDevice ) [0m
+:3:hip_memory.cpp           :888 : 4455695399 us:  hipMemcpy: Returned hipSuccess : : duration: 50 us
+:3:hip_memory.cpp           :887 : 4455695402 us:  [32m hipMemcpy ( 0x7d90e3600000, 0x7da10e1f4010, 2097152, hipMemcpyHostToDevice ) [0m
+:3:hip_memory.cpp           :888 : 4455695454 us:  hipMemcpy: Returned hipSuccess : : duration: 52 us
+:3:hip_memory.cpp           :887 : 4455695458 us:  [32m hipMemcpy ( 0x7da10db80000, 0x7da10ce00000, 524288, hipMemcpyDeviceToDevice ) [0m
+:3:rocvirtual.cpp           :4439: 4455695462 us:  ShaderName : __amd_rocclr_copyBuffer
+:3:hip_memory.cpp           :888 : 4455695465 us:  hipMemcpy: Returned hipSuccess : : duration: 7 us
+:3:hip_memory.cpp           :887 : 4455695468 us:  [32m hipMemcpy ( 0x7d90eb740000, 0x7d90eae00000, 786432, hipMemcpyDeviceToDevice ) [0m
+:3:rocvirtual.cpp           :4439: 4455695473 us:  ShaderName : __amd_rocclr_copyBuffer
+:3:hip_memory.cpp           :888 : 4455695476 us:  hipMemcpy: Returned hipSuccess : : duration: 8 us
+:3:hip_memory.cpp           :887 : 4455695479 us:  [32m hipMemcpy ( 0x7d90e9fd0000, 0x7d90e9600000, 196608, hipMemcpyDeviceToDevice ) [0m
+:3:rocvirtual.cpp           :4439: 4455695483 us:  ShaderName : __amd_rocclr_copyBuffer
+:3:hip_memory.cpp           :888 : 4455695486 us:  hipMemcpy: Returned hipSuccess : : duration: 7 us
+:3:hip_memory.cpp           :887 : 4455695489 us:  [32m hipMemcpy ( 0x7d90e87d0000, 0x7d90e7e00000, 196608, hipMemcpyDeviceToDevice ) [0m
+:3:rocvirtual.cpp           :4439: 4455695493 us:  ShaderName : __amd_rocclr_copyBuffer
+:3:hip_memory.cpp           :888 : 4455695496 us:  hipMemcpy: Returned hipSuccess : : duration: 7 us
+:3:hip_memory.cpp           :887 : 4455695499 us:  [32m hipMemcpy ( 0x7d90e6fffe00, 0x7d90e6600000, 512, hipMemcpyDeviceToDevice ) [0m
+:3:rocvirtual.cpp           :4439: 4455695502 us:  ShaderName : __amd_rocclr_copyBuffer
+:3:hip_memory.cpp           :888 : 4455695506 us:  hipMemcpy: Returned hipSuccess : : duration: 7 us
+:3:hip_memory.cpp           :887 : 4455695509 us:  [32m hipMemcpy ( 0x7d90e57ffc00, 0x7d90e4e00000, 1024, hipMemcpyDeviceToDevice ) [0m
+:3:rocvirtual.cpp           :4439: 4455695513 us:  ShaderName : __amd_rocclr_copyBuffer
+:3:hip_memory.cpp           :888 : 4455695517 us:  hipMemcpy: Returned hipSuccess : : duration: 8 us
+:3:hip_memory.cpp           :887 : 4455695519 us:  [32m hipMemcpy ( 0x7d90e3e70000, 0x7d90e3600000, 1638400, hipMemcpyDeviceToDevice ) [0m
+:3:rocvirtual.cpp           :4439: 4455695523 us:  ShaderName : __amd_rocclr_copyBuffer
+:3:hip_memory.cpp           :888 : 4455695527 us:  hipMemcpy: Returned hipSuccess : : duration: 8 us
+:3:hip_memory.cpp           :887 : 4455695531 us:  [32m hipMemcpy ( 0x7da10d600000, 0x610b9084b400, 8, hipMemcpyHostToDevice ) [0m
+:3:rocvirtual.cpp           :4439: 4455695537 us:  ShaderName : __amd_rocclr_copyBuffer
+:3:hip_memory.cpp           :888 : 4455695547 us:  hipMemcpy: Returned hipSuccess : : duration: 16 us
+:3:hip_memory.cpp           :887 : 4455695551 us:  [32m hipMemcpy ( 0x7da10d601000, 0x610b9084b400, 8, hipMemcpyHostToDevice ) [0m
+:3:rocvirtual.cpp           :4439: 4455695553 us:  ShaderName : __amd_rocclr_copyBuffer
+:3:hip_memory.cpp           :888 : 4455695563 us:  hipMemcpy: Returned hipSuccess : : duration: 12 us
+:3:hip_memory.cpp           :887 : 4455695567 us:  [32m hipMemcpy ( 0x7da10d602000, 0x610b9084b400, 8, hipMemcpyHostToDevice ) [0m
+:3:rocvirtual.cpp           :4439: 4455695570 us:  ShaderName : __amd_rocclr_copyBuffer
+:3:hip_memory.cpp           :888 : 4455695580 us:  hipMemcpy: Returned hipSuccess : : duration: 13 us
+:3:hip_memory.cpp           :887 : 4455695583 us:  [32m hipMemcpy ( 0x7da10d603000, 0x610b9084b400, 8, hipMemcpyHostToDevice ) [0m
+:3:rocvirtual.cpp           :4439: 4455695586 us:  ShaderName : __amd_rocclr_copyBuffer
+:3:hip_memory.cpp           :888 : 4455695596 us:  hipMemcpy: Returned hipSuccess : : duration: 13 us
+:3:hip_memory.cpp           :887 : 4455695600 us:  [32m hipMemcpy ( 0x7da10d604000, 0x610b9084b400, 8, hipMemcpyHostToDevice ) [0m
+:3:rocvirtual.cpp           :4439: 4455695604 us:  ShaderName : __amd_rocclr_copyBuffer
+:3:hip_memory.cpp           :888 : 4455695613 us:  hipMemcpy: Returned hipSuccess : : duration: 13 us
+:3:hip_event.cpp            :367 : 4455695646 us:  [32m hipEventCreateWithFlags ( 0x610b9084b3e0, 0 ) [0m
+:3:hip_event.cpp            :373 : 4455695653 us:  hipEventCreateWithFlags: Returned hipSuccess : 0x610b9084c880
+:3:hip_event.cpp            :367 : 4455695655 us:  [32m hipEventCreateWithFlags ( 0x610b9084c900, 0 ) [0m
+:3:hip_event.cpp            :373 : 4455695657 us:  hipEventCreateWithFlags: Returned hipSuccess : 0x610b9084c920
+:3:hip_event.cpp            :378 : 4455695661 us:  [32m hipEventCreate ( 0x610b90502500 ) [0m
+:3:hip_event.cpp            :384 : 4455695664 us:  hipEventCreate: Returned hipSuccess : 0x610b9084c9c0
+:3:hip_event.cpp            :378 : 4455695667 us:  [32m hipEventCreate ( 0x610b90502508 ) [0m
+:3:hip_event.cpp            :384 : 4455695668 us:  hipEventCreate: Returned hipSuccess : 0x610b9084ca60
+:3:hip_event.cpp            :491 : 4455695673 us:  [32m hipEventRecord ( 0x610b9084c9c0, 0x610b904aa7f0 ) [0m
+:3:rocdevice.cpp            :3119: 4455695676 us:  Check HW event = 0x7da1175fb780
+:3:hip_event.cpp            :492 : 4455695681 us:  hipEventRecord: Returned hipSuccess : 
+:3:hip_module.cpp           :88  : 4455695690 us:  [32m hipModuleGetFunction ( 0x7ffe1f62d890, 0x610b90517140, Cijk_Alik_Bljk_BBS_BH_Bias_HA_S_SAV_UserArgs_MT256x240x64_MI16x16x1_SN_LDSB0_AFC1_AG0_AGGSUA0_AGNTAB0_AFEM1_AFEM1_ASEM1_BL1_BS1_CD1_1_CLR0_CLS1_CADS0_DTLA0_DTLB0_DTLM0_DTVA0_DTVB0_DTVMXSA0_DTVMXSB0_DTVSM0_DPLB0_EPS0_ELFLR4_EMLLn1_FDSI0_GRPM1_GRVWA1_GRVWB1_GSUAMB_GLS0_HPLR0_ISA1250_ICIW1_IU1_K1_LDSTI1_LBSPPA512_LBSPPB256_LBSPPMXSA0_LBSPPMXSB0_LBSPPM0_LPA8_LPB8_LPMXSA0_LPMXSB0_LPM0_LRVWn1_LWPMn1_MIAV1_MIWT4_15_MXLITDM_MXSFIMS_MO40_MGRIPM1_NTn1_NTA0_NTB0_NTC0_NTD0_NTE0_NTMXSA0_NTMXSB0_NTM0_NTWS0_NVn1_NVA0_NVB0_NVC0_NVD0_NVE0_NVMXSA0_NVMXSB0_NVM0_NVWS0_NEPBS0_NLCA1_NLCB1_ONLL1_PAP0_PGL0_PGR2_PLR1_PKA1_SGROB0_SIA4_SS1_SPO0_SRVW0_SSO0_SVW4_SK0_SKFTR0_SKFDPO0_SKWS0_SKXCCM0_SNLL0_SIPn1_SGRO0_TDMI3_TDMIM2_TDMS0_TIN0_THn1_THA0_THB1_THC0_THD1_THE0_THMXSA0_THMXSB0_THM0_THWS0_TLDS1_TLDSMn1_ULSGRO0_USL0_USLMX0_UDFMAC0_UIOFGRO0_UPLRP0_USFGROn1_USI0_VSn1_VWA4_VWB1_WSGRA1_WSGRB1_WS32_WG64_2_1_WGMXCC1 ) [0m
+:3:hip_module.cpp           :103 : 4455695702 us:  hipModuleGetFunction: Returned hipSuccess : 
+:3:hip_module.cpp           :634 : 4455695717 us:  [32m hipExtModuleLaunchKernel ( 0x610b9084c1b0, 256, 1, 1, 128, 1, 1, 0, 0x610b904aa7f0, char array:<null>, 0x7ffe1f62d8f0, char array:<null>, char array:<null>, 0 ) [0m
+:3:rocdevice.cpp            :3119: 4455695724 us:  Check HW event = 0x7da1175fb780
+:3:rocvirtual.cpp           :4439: 4455695731 us:  ShaderName : Cijk_Alik_Bljk_BBS_BH_Bias_HA_S_SAV_UserArgs_MT256x240x64_MI16x16x1_SN_LDSB0_AFC1_AG0_AGGSUA0_AGNTAB0_AFEM1_AFEM1_ASEM1_BL1_BS1_CD1_1_CLR0_CLS1_CADS0_DTLA0_DTLB0_DTLM0_DTVA0_DTVB0_DTVMXSA0_DTVMXSB0_DTVSM0_DPLB0_EPS0_ELFLR4_EMLLn1_FDSI0_GRPM1_GRVWA1_GRVWB1_GSUAMB_GLS0_HPLR0_ISA1250_ICIW1_IU1_K1_LDSTI1_LBSPPA512_LBSPPB256_LBSPPMXSA0_LBSPPMXSB0_LBSPPM0_LPA8_LPB8_LPMXSA0_LPMXSB0_LPM0_LRVWn1_LWPMn1_MIAV1_MIWT4_15_MXLITDM_MXSFIMS_MO40_MGRIPM1_NTn1_NTA0_NTB0_NTC0_NTD0_NTE0_NTMXSA0_NTMXSB0_NTM0_NTWS0_NVn1_NVA0_NVB0_NVC0_NVD0_NVE0_NVMXSA0_NVMXSB0_NVM0_NVWS0_NEPBS0_NLCA1_NLCB1_ONLL1_PAP0_PGL0_PGR2_PLR1_PKA1_SGROB0_SIA4_SS1_SPO0_SRVW0_SSO0_SVW4_SK0_SKFTR0_SKFDPO0_SKWS0_SKXCCM0_SNLL0_SIPn1_SGRO0_TDMI3_TDMIM2_TDMS0_TIN0_THn1_THA0_THB1_THC0_THD1_THE0_THMXSA0_THMXSB0_THM0_THWS0_TLDS1_TLDSMn1_ULSGRO0_USL0_USLMX0_UDFMAC0_UIOFGRO0_UPLRP0_USFGROn1_USI0_VSn1_VWA4_VWB1_WSGRA1_WSGRB1_WS32_WG64_2_1_WGMXCC1

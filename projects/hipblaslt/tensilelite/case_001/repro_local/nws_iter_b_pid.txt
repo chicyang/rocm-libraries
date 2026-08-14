@@ -1,0 +1,6 @@
+launched_job_pid=2853391      # `timeout -s KILL 120` wrapper, backgrounded by the shell
+faulting_pid=2853392          # its child, the exec'd tensilelite-client ("tensilelite-cli" in dmesg)
+pasid=8995
+faults_attributed=10/10       # every page-fault record in nws_iter_b_delta.txt names pid 2853392
+other_processes_in_delta=0
+exit_code=137                 # SIGKILL from timeout: hang, no result row

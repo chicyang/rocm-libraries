@@ -1,0 +1,33 @@
+loading config file case_001/repro_local/clsfix_out/1_BenchmarkProblems/Cijk_Alik_Bljk_BBS_BH_Bias_HA_S_SAV_UserArgs_00/00_Final/caches/f95447b0d6ab/source/ClientParameters.ini
+
+srand seed is set to 1786688254
+
+Loading /home/chicyang/rocm-libraries2/projects/hipblaslt/tensilelite/case_001/repro_local/clsfix_out/1_BenchmarkProblems/Cijk_Alik_Bljk_BBS_BH_Bias_HA_S_SAV_UserArgs_00/00_Final/caches/f95447b0d6ab/source/library/gfx1250/TensileLibrary_gfx1250.co
+Tensor name a init mode TrigSin
+Tensor name b init mode TrigCos
+Tensor name c init mode TrigSin
+Tensor name d init mode TrigSin
+Tensor name e init mode Zero
+Tensor name bias init mode Random
+Tensor name scaleA init mode Two
+Tensor name scaleB init mode Two
+Tensor name scaleC init mode Two
+Tensor name scaleD init mode Two
+Tensor name scaleAlphaVec init mode TrigSin
+Tensor name metadata init mode Zero
+Tensor name Synchronizer init mode Zero
+Tensor name  init mode Zero
+Tensor name compressed init mode Zero
+Tensor name  init mode Zero
+Tensor name  init mode Zero
+Tensor name  init mode Zero
+constant name alpha init mode One
+constant name beta init mode One
+constant name activation-alpha init mode Free
+constant name activation-beta init mode Free
+Log level: Debug
+run,problem-progress,solution-progress,operation,problem-sizes,bias-type,factor-dim,activation-type,solution,validation,time-us,gflops,empty,total-gran,tiles-per-cu,num-cus,tile0-gran,tile1-gran,cu-gran,wave-gran,mem-read-bytes,mem-write-bytes,temp-edge,clock-sys,clock-soc,clock-mem,fan-rpm,hardware-samples,enqueue-time
+0,0/0,0/0,Contraction_l_Alik_Bljk_Cijk_Dijk,"(256,384,1,1024)",BFloat16,0,None,Cijk_Alik_Bljk_BBS_BH_Bias_HA_S_SAV_UserArgs_MT256x240x64_MI16x16x1_SN_LDSB0_AFC1_AG0_AGGSUA0_AGNTAB0_AFEM1_AFEM1_ASEM1_BL1_BS1_CD1_1_CLR0_CLS0_CADS0_DTLA0_DTLB0_DTLM0_DTVA0_DTVB0_DTVMXSA0_DTVMXSB0_DTVSM0_DPLB0_EPS0_ELFLR4_EMLLn1_FDSI0_GRPM1_GRVWA1_GRVWB1_GSU1_GSUAMB_GSUC0_GSUWGMRR0_GLS0_HPLR0_ISA1250_ICIW1_IU1_K1_LDSTI1_LBSPPA512_LBSPPB256_LBSPPMXSA0_LBSPPMXSB0_LBSPPM0_LPA8_LPB8_LPMXSA0_LPMXSB0_LPM0_LRVWn1_LWPMn1_MIAV1_MIWT4_15_MXLITDM_MXSFIMS_MO40_MGRIPM1_NTn1_NTA0_NTB0_NTC0_NTD0_NTE0_NTMXSA0_NTMXSB0_NTM0_NTWS0_NVn1_NVA0_NVB0_NVC0_NVD0_NVE0_NVMXSA0_NVMXSB0_NVM0_NVWS0_NEPBS0_NLCA1_NLCB1_ONLL1_PAP0_PGL0_PGR2_PLR1_PKA1_SGROB0_SIA4_SS1_SU0_SUM0_SUS128_SPO0_SRVW0_SSO0_SVW4_SK0_SKFTR0_SKFDPO0_SKWS0_SKXCCM0_SNLL0_SIPn1_SGRO0_TDMI3_TDMIM2_TDMS0_TIN0_THn1_THA0_THB1_THC0_THD1_THE0_THMXSA0_THMXSB0_THM0_THWS0_TLDS1_TLDSMn1_ULSGRO0_USL0_USLMX0_UDFMAC0_UIOFGRO0_UPLRP0_USFGROn1_USI0_VSn1_VWA4_VWB1_WSGRA1_WSGRB1_WS32_WG64_2_1_WGM1_WGMXCC1_WGMXCCGn1,,210.627,955.844,,0.003125,0.0078125,256,1,0.8,0.0078125,0.5,1821900,196608,,,,,,,2026-08-14 06:17:34.330380
+########################## 
+TIMING:flush_timing_buffer:0.001122
+++++++++++++++++++++++++

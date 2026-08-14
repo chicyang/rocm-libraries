@@ -1,0 +1,116 @@
+[ 1961.020020] amdgpu 0001:01:00.0: [gfxhub0] no-retry page fault (src_id:0 ring:24 vmid:3 pasid:181)
+[ 1961.030045] amdgpu 0001:01:00.0:  Process tensilelite-cli pid 179856 thread tensilelite-cli pid 179856
+[ 1961.040436] amdgpu 0001:01:00.0:   in page starting at address 0x0000709e2e000000 from IH client 27 (GC_UTCL2)
+[ 1961.051604] amdgpu 0001:01:00.0:   cookie node_id 2 fault from die AID0.XCD0
+[ 1961.059476] amdgpu 0001:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS_LO32:0x00C04061
+[ 1961.067733] amdgpu 0001:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[ 1961.074826] amdgpu 0001:01:00.0: 	 MORE_FAULTS: 0x1
+[ 1961.080260] amdgpu 0001:01:00.0: 	 WALKER_ERROR: 0x0
+[ 1961.085799] amdgpu 0001:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 1961.091824] amdgpu 0001:01:00.0: 	 MAPPING_ERROR: 0x0
+[ 1961.097460] amdgpu 0001:01:00.0: 	 RW: 0x0
+[ 1961.102031] amdgpu 0001:01:00.0: [gfxhub0] no-retry page fault (src_id:0 ring:24 vmid:3 pasid:181)
+[ 1961.112034] amdgpu 0001:01:00.0:  Process tensilelite-cli pid 179856 thread tensilelite-cli pid 179856
+[ 1961.122424] amdgpu 0001:01:00.0:   in page starting at address 0x0000709e2e001000 from IH client 27 (GC_UTCL2)
+[ 1961.133592] amdgpu 0001:01:00.0:   cookie node_id 2 fault from die AID0.XCD0
+[ 1961.141465] amdgpu 0001:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS_LO32:0x00C04061
+[ 1961.149721] amdgpu 0001:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[ 1961.156814] amdgpu 0001:01:00.0: 	 MORE_FAULTS: 0x1
+[ 1961.162257] amdgpu 0001:01:00.0: 	 WALKER_ERROR: 0x0
+[ 1961.167796] amdgpu 0001:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 1961.173821] amdgpu 0001:01:00.0: 	 MAPPING_ERROR: 0x0
+[ 1961.179458] amdgpu 0001:01:00.0: 	 RW: 0x0
+[ 1961.184029] amdgpu 0001:01:00.0: [gfxhub0] no-retry page fault (src_id:0 ring:24 vmid:3 pasid:181)
+[ 1961.194032] amdgpu 0001:01:00.0:  Process tensilelite-cli pid 179856 thread tensilelite-cli pid 179856
+[ 1961.204412] amdgpu 0001:01:00.0:   in page starting at address 0x0000709e2e002000 from IH client 27 (GC_UTCL2)
+[ 1961.215578] amdgpu 0001:01:00.0:   cookie node_id 2 fault from die AID0.XCD0
+[ 1961.223439] amdgpu 0001:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS_LO32:0x00C04061
+[ 1961.231694] amdgpu 0001:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[ 1961.238785] amdgpu 0001:01:00.0: 	 MORE_FAULTS: 0x1
+[ 1961.244227] amdgpu 0001:01:00.0: 	 WALKER_ERROR: 0x0
+[ 1961.249764] amdgpu 0001:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 1961.255788] amdgpu 0001:01:00.0: 	 MAPPING_ERROR: 0x0
+[ 1961.261423] amdgpu 0001:01:00.0: 	 RW: 0x0
+[ 1961.265993] amdgpu 0001:01:00.0: [gfxhub0] no-retry page fault (src_id:0 ring:24 vmid:3 pasid:181)
+[ 1961.275994] amdgpu 0001:01:00.0:  Process tensilelite-cli pid 179856 thread tensilelite-cli pid 179856
+[ 1961.286383] amdgpu 0001:01:00.0:   in page starting at address 0x0000709e2e003000 from IH client 27 (GC_UTCL2)
+[ 1961.297548] amdgpu 0001:01:00.0:   cookie node_id 2 fault from die AID0.XCD0
+[ 1961.305418] amdgpu 0001:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS_LO32:0x00C04061
+[ 1961.313674] amdgpu 0001:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[ 1961.321035] amdgpu 0001:01:00.0: 	 MORE_FAULTS: 0x1
+[ 1961.326681] amdgpu 0001:01:00.0: 	 WALKER_ERROR: 0x0
+[ 1961.332415] amdgpu 0001:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 1961.338655] amdgpu 0001:01:00.0: 	 MAPPING_ERROR: 0x0
+[ 1961.344478] amdgpu 0001:01:00.0: 	 RW: 0x0
+[ 1961.349232] amdgpu 0001:01:00.0: [gfxhub0] no-retry page fault (src_id:0 ring:24 vmid:3 pasid:181)
+[ 1961.359409] amdgpu 0001:01:00.0:  Process tensilelite-cli pid 179856 thread tensilelite-cli pid 179856
+[ 1961.369982] amdgpu 0001:01:00.0:   in page starting at address 0x0000709e2e004000 from IH client 27 (GC_UTCL2)
+[ 1961.381336] amdgpu 0001:01:00.0:   cookie node_id 2 fault from die AID0.XCD0
+[ 1961.389406] amdgpu 0001:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS_LO32:0x00C04061
+[ 1961.397859] amdgpu 0001:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[ 1961.405168] amdgpu 0001:01:00.0: 	 MORE_FAULTS: 0x1
+[ 1961.410830] amdgpu 0001:01:00.0: 	 WALKER_ERROR: 0x0
+[ 1961.416566] amdgpu 0001:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 1961.422791] amdgpu 0001:01:00.0: 	 MAPPING_ERROR: 0x0
+[ 1961.428619] amdgpu 0001:01:00.0: 	 RW: 0x0
+[ 1961.433386] amdgpu 0001:01:00.0: [gfxhub0] no-retry page fault (src_id:0 ring:24 vmid:3 pasid:181)
+[ 1961.443632] amdgpu 0001:01:00.0:  Process tensilelite-cli pid 179856 thread tensilelite-cli pid 179856
+[ 1961.454246] amdgpu 0001:01:00.0:   in page starting at address 0x0000709e2e005000 from IH client 27 (GC_UTCL2)
+[ 1961.465628] amdgpu 0001:01:00.0:   cookie node_id 2 fault from die AID0.XCD0
+[ 1961.473736] amdgpu 0001:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS_LO32:0x00C04061
+[ 1961.482231] amdgpu 0001:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[ 1961.489547] amdgpu 0001:01:00.0: 	 MORE_FAULTS: 0x1
+[ 1961.495195] amdgpu 0001:01:00.0: 	 WALKER_ERROR: 0x0
+[ 1961.500932] amdgpu 0001:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 1961.507148] amdgpu 0001:01:00.0: 	 MAPPING_ERROR: 0x0
+[ 1961.512974] amdgpu 0001:01:00.0: 	 RW: 0x0
+[ 1961.517761] amdgpu 0001:01:00.0: [gfxhub0] no-retry page fault (src_id:0 ring:24 vmid:3 pasid:181)
+[ 1961.527996] amdgpu 0001:01:00.0:  Process tensilelite-cli pid 179856 thread tensilelite-cli pid 179856
+[ 1961.538609] amdgpu 0001:01:00.0:   in page starting at address 0x0000709e2e006000 from IH client 27 (GC_UTCL2)
+[ 1961.549995] amdgpu 0001:01:00.0:   cookie node_id 2 fault from die AID0.XCD0
+[ 1961.558073] amdgpu 0001:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS_LO32:0x00C04061
+[ 1961.566526] amdgpu 0001:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[ 1961.573810] amdgpu 0001:01:00.0: 	 MORE_FAULTS: 0x1
+[ 1961.579464] amdgpu 0001:01:00.0: 	 WALKER_ERROR: 0x0
+[ 1961.585199] amdgpu 0001:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 1961.591431] amdgpu 0001:01:00.0: 	 MAPPING_ERROR: 0x0
+[ 1961.597271] amdgpu 0001:01:00.0: 	 RW: 0x0
+[ 1961.602036] amdgpu 0001:01:00.0: [gfxhub0] no-retry page fault (src_id:0 ring:24 vmid:3 pasid:181)
+[ 1961.612244] amdgpu 0001:01:00.0:  Process tensilelite-cli pid 179856 thread tensilelite-cli pid 179856
+[ 1961.622850] amdgpu 0001:01:00.0:   in page starting at address 0x0000709e2e007000 from IH client 27 (GC_UTCL2)
+[ 1961.634230] amdgpu 0001:01:00.0:   cookie node_id 2 fault from die AID0.XCD0
+[ 1961.642335] amdgpu 0001:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS_LO32:0x00C04061
+[ 1961.650807] amdgpu 0001:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[ 1961.658125] amdgpu 0001:01:00.0: 	 MORE_FAULTS: 0x1
+[ 1961.663777] amdgpu 0001:01:00.0: 	 WALKER_ERROR: 0x0
+[ 1961.669536] amdgpu 0001:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 1961.675780] amdgpu 0001:01:00.0: 	 MAPPING_ERROR: 0x0
+[ 1961.681610] amdgpu 0001:01:00.0: 	 RW: 0x0
+[ 1961.686376] amdgpu 0001:01:00.0: [gfxhub0] no-retry page fault (src_id:0 ring:24 vmid:3 pasid:181)
+[ 1961.696595] amdgpu 0001:01:00.0:  Process tensilelite-cli pid 179856 thread tensilelite-cli pid 179856
+[ 1961.707196] amdgpu 0001:01:00.0:   in page starting at address 0x0000709e2e008000 from IH client 27 (GC_UTCL2)
+[ 1961.718552] amdgpu 0001:01:00.0:   cookie node_id 2 fault from die AID0.XCD0
+[ 1961.726613] amdgpu 0001:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS_LO32:0x00C04061
+[ 1961.735055] amdgpu 0001:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[ 1961.742333] amdgpu 0001:01:00.0: 	 MORE_FAULTS: 0x1
+[ 1961.747962] amdgpu 0001:01:00.0: 	 WALKER_ERROR: 0x0
+[ 1961.753688] amdgpu 0001:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 1961.759899] amdgpu 0001:01:00.0: 	 MAPPING_ERROR: 0x0
+[ 1961.765718] amdgpu 0001:01:00.0: 	 RW: 0x0
+[ 1961.770473] amdgpu 0001:01:00.0: [gfxhub0] no-retry page fault (src_id:0 ring:24 vmid:3 pasid:181)
+[ 1961.780646] amdgpu 0001:01:00.0:  Process tensilelite-cli pid 179856 thread tensilelite-cli pid 179856
+[ 1961.791220] amdgpu 0001:01:00.0:   in page starting at address 0x0000709e2e009000 from IH client 27 (GC_UTCL2)
+[ 1961.802569] amdgpu 0001:01:00.0:   cookie node_id 2 fault from die AID0.XCD0
+[ 1961.810626] amdgpu 0001:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS_LO32:0x00C04061
+[ 1961.819065] amdgpu 0001:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[ 1961.826342] amdgpu 0001:01:00.0: 	 MORE_FAULTS: 0x1
+[ 1961.831970] amdgpu 0001:01:00.0: 	 WALKER_ERROR: 0x0
+[ 1961.837696] amdgpu 0001:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 1961.843906] amdgpu 0001:01:00.0: 	 MAPPING_ERROR: 0x0
+[ 1961.849726] amdgpu 0001:01:00.0: 	 RW: 0x0
+[ 1963.105166] amdgpu 0001:01:00.0: MES(0, 0) failed to respond to msg=REMOVE_QUEUE
+[ 2036.966996] kauditd_printk_skb: 22 callbacks suppressed
+[ 2036.967003] audit: type=1400 audit(1786671565.763:138): apparmor="AUDIT" operation="userns_create" class="namespace" info="Userns create - transitioning profile" profile="unconfined" pid=183724 comm="cursorsandbox" requested="userns_create" target="unprivileged_userns"
+[ 2036.967784] audit: type=1400 audit(1786671565.764:139): apparmor="DENIED" operation="capable" class="cap" profile="unprivileged_userns" pid=183724 comm="cursorsandbox" capability=21  capname="sys_admin"
+[ 2039.282954] audit: type=1400 audit(1786671568.079:140): apparmor="AUDIT" operation="userns_create" class="namespace" info="Userns create - transitioning profile" profile="unconfined" pid=183871 comm="cursorsandbox" requested="userns_create" target="unprivileged_userns"
+[ 2039.284441] audit: type=1400 audit(1786671568.081:141): apparmor="DENIED" operation="capable" class="cap" profile="unprivileged_userns" pid=183871 comm="cursorsandbox" capability=21  capname="sys_admin"
