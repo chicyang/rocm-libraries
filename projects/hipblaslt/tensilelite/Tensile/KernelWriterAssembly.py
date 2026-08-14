@@ -55,7 +55,7 @@ from rocisa.instruction import BranchInstruction, BufferLoadB128, BufferLoadB32,
   SCmpEQU32, SCmpEQU64, SCmpGeI32, SCmpGeU32, SCmpGtI32, SCmpGtU32, SCmpKEQU32, \
   SCmpKGeU32, SCmpKGtU32, SCmpKLGU32, SCmpLeI32, SCmpLeU32, SCmpLgU32, SCmpLtU32, SCmpLtI32, \
   SEndpgm, SFf1B32, SGetRegB32, SFlbitI32B32, SLShiftLeft2AddU32, SLShiftLeftB32, SLShiftLeftB64, SLShiftRightB32, \
-  SLShiftRightB64, SLoadB32, SLoadB64, SMFMAInstruction, SMemLoadInstruction, SMaxU32, SMinI32, \
+  SLShiftRightB64, SLoadB32, SLoadB64, SMFMAInstruction, SMemLoadInstruction, SMaxI32, SMaxU32, SMinI32, \
   SMinU32, SMovB32, SMovB64, SMulHIU32, SMulI32, SNop, SOrB32, SOrSaveExecB32, \
   SOrSaveExecB64, SSExtI16toI32, SSetPCB64, SSetRegIMM32B32, SSetPrior, SSubBU32, SSubI32, SSubU32, SSubU64, SSetVgprMsb,\
   SWaitCnt, SWaitAlu, SXorB32, VAShiftRightI32, VAccvgprReadB32, VAccvgprWrite, VAccvgprWriteB32, \
@@ -11509,12 +11509,26 @@ class KernelWriterAssembly(KernelWriter):
           # halfRows is per-wave: even waves load A (MacroTile0//2), odd load B
           # (MacroTile1//2).
           group1 = f"tdm{tc}Group1"
+          group2 = f"tdm{tc}Group2"
           halfRowsA = kernel["MacroTile0"] // 2
           halfRowsB = kernel["MacroTile1"] // 2
-          with self.allocTmpSgpr(3, tag="tdmSplitDim1Recompute") as tmpSgprRes:
+          # An iterate-mode walk keeps stepping for a whole rows_per_il no matter what
+          # dim1 says, so the second load needs its own count derived from H1.
+          splitIterConsts = self._tdmSplitIterConsts(kernel) if isIterA else [None, None]
+          needIterCount = any(c is not None for c in splitIterConsts)
+          twoIterCounts = (splitIterConsts[0] is not None and splitIterConsts[1] is not None
+                           and splitIterConsts[0] != splitIterConsts[1])
+          nTmp = 3 + ((3 if twoIterCounts else 2) if needIterCount else 0)
+          with self.allocTmpSgpr(nTmp, tag="tdmSplitDim1Recompute") as tmpSgprRes:
             h0 = tmpSgprRes.idx
             h1 = tmpSgprRes.idx + 1
             hr = tmpSgprRes.idx + 2
+            sSave = tmpSgprRes.idx + 3
+            sIter = tmpSgprRes.idx + 4
+            sAlt = tmpSgprRes.idx + 5 if twoIterCounts else None
+            if needIterCount:
+              imod.middle.add(SMovB32(sgpr(sSave), sgpr(f"{group2}+3"),
+                                      "save first-half iterations"))
             if halfRowsA == halfRowsB:
               imod.middle.add(SMovB32(sgpr(hr), halfRowsA, "halfRows"))
             else:
@@ -11532,9 +11546,15 @@ class KernelWriterAssembly(KernelWriter):
             imod.middle.add(SSubU32(sgpr(h1), sgpr(h0), sgpr(hr), "H1 = H0 - halfRows"))
             imod.middle.add(SCSelectB32(sgpr(h1), 0, sgpr(h1), "clamp H1 to 0"))
             imod.middle.add(comp.setTensorDim1(group1, h1, self))
+            if needIterCount:
+              self._emitTdmSplitIterCount(imod.middle, kernel, splitIterConsts, group2,
+                                          h1, sIter, sAlt)
             comp.setMemToken([self.states.memTokenLdsSplit[tdmParity][1]])
             imod.middle.add(comp.issueLoad("tdmAGroup0", "tdmAGroup1", tdmAGroup2, tdmAGroup3))
             imod.middle.add(comp.setTensorDim1(group1, h0, self))
+            if needIterCount:
+              imod.middle.add(SMovB32(sgpr(f"{group2}+3"), sgpr(sSave),
+                                      "restore first-half iterations"))
         else:
           comp.setMemToken([self.states.memTokenLdsSplit[tdmParity][1]])
           imod.middle.add(comp.issueLoad("tdmAGroup0", "tdmAGroup1", tdmAGroup2, tdmAGroup3))
@@ -19152,6 +19172,70 @@ class KernelWriterAssembly(KernelWriter):
           f"bytes_per_row({bytes_per_row}=round(DepthU*bpe)).")
     return lbspp // bytes_per_row
 
+  def _emitTdmIterCount(self, mod, sIter, remainRowsSgpr, rows_per_il, tile_dim1):
+    """Leave the iterate-mode `iterations` field value (encoded n-1) in sgpr(sIter).
+
+    Every iteration advances the global address by global_inc no matter what the
+    descriptor's dimension field says, so a partial tile has to shorten the walk
+    itself; otherwise it steps past the end of the tensor."""
+    mod.add(SMinU32(dst=sgpr(sIter), src0=sgpr(remainRowsSgpr), src1=rows_per_il,
+                    comment=f"TDM iter rows = min(rows owned by this wave, rows_per_il({rows_per_il}))"))
+    mod.add(SAddU32(dst=sgpr(sIter), src0=sgpr(sIter), src1=(tile_dim1 - 1),
+                    comment=f"round up to a whole tile_dim1({tile_dim1})"))
+    divComment = f"TDM iter_count = ceil(rows / tile_dim1({tile_dim1}))"
+    if tile_dim1 & (tile_dim1 - 1) == 0:
+      mod.add(SLShiftRightB32(dst=sgpr(sIter), shiftHex=int(log2(tile_dim1)), src=sgpr(sIter),
+                              comment=divComment))
+    else:
+      mod.addComment0(divComment)
+      with self.allocTmpSgpr(2, tag="tdmIterCountDivisor") as divTmp:
+        mod.add(scalarStaticDivideAndRemainder(qReg=sIter, rReg=-1, dReg=sIter,
+                                               divisor=tile_dim1, tmpSgprRes=divTmp,
+                                               doRemainder=0))
+    mod.add(SMaxU32(dst=sgpr(sIter), src0=sgpr(sIter), src1=1,
+                    comment="waves with no rows still issue one iteration; dimension field clamps the read"))
+    mod.add(SSubU32(dst=sgpr(sIter), src0=sgpr(sIter), src1=1,
+                    comment="iterations field encodes n-1"))
+
+  def _tdmSplitIterConsts(self, kernel):
+    """Per wave-parity (rows_per_il, tile_dim1) for the aliased A/B TDMSplit descriptor
+    -- even waves load A, odd load B -- or None for a parity not using iterate mode."""
+    consts = []
+    for tP in (self.tPA, self.tPB):
+      tc: str = tP["tensorChar"]
+      if not kernel.get("_TDMIterateMode%s" % tc, False):
+        consts.append(None)
+        continue
+      mt: int = kernel["MacroTile%u" % tP["idx"]]
+      dtype = kernel["ProblemType"]["DataType%s" % tc]
+      # TDMSplit implies dim1Divisor == 2, and numComp == NumWaves // 2.
+      rowsPerIl = mt // (kernel["NumWaves"] // 2 * 2)
+      consts.append((rowsPerIl, self._tdmIterTileDim1(kernel, tc, kernel["DepthU"], dtype)))
+    return consts
+
+  def _emitTdmSplitIterCount(self, mod, kernel, consts, group2, rowsSgpr, sIter, sAlt):
+    """Reprogram the aliased descriptor's `iterations` for a walk starting where
+    sgpr(rowsSgpr) rows remain. A and B can differ in both rows_per_il and tile_dim1,
+    so when they do, compute both and pick on wave parity. A parity whose tile is not
+    in iterate mode ignores the field, so it does not need its own value."""
+    comp = TensorDataMoverLoad.find(self)
+    cA, cB = consts
+    if cA is None or cB is None or cA == cB:
+      c = cA if cA is not None else cB
+      self._emitTdmIterCount(mod, sIter, rowsSgpr, c[0], c[1])
+    else:
+      self._emitTdmIterCount(mod, sIter, rowsSgpr, cA[0], cA[1])
+      self._emitTdmIterCount(mod, sAlt, rowsSgpr, cB[0], cB[1])
+      # Both computations clobber SCC, so establish parity only now.
+      if self.isTdmWaveIdxLive(kernel):
+        self._emitTdmWaveParitySCC(mod, kernel, comment="wave parity (A=even/B=odd)")
+      else:
+        with self.allocTmpSgpr(1, tag="tdmSplitIterParity") as waveIdTmp:
+          self._emitTdmWaveParitySCC(mod, kernel, waveIdTmp.idx, "wave parity (A=even/B=odd)")
+      mod.add(SCSelectB32(sgpr(sIter), sgpr(sAlt), sgpr(sIter),
+                          "TDM iter_count = parity ? B : A"))
+    mod.add(comp.setIterations(group2, sIter))
+
   def _emitTdmIterateInit(self, mod, kernel, tc, dtype, du, mt, perIssueLoadRowDivisor,
                           descSgprName, strideRefName, remainRowsSgpr=None):
     comp = TensorDataMoverLoad.find(self)
@@ -19173,9 +19257,10 @@ class KernelWriterAssembly(KernelWriter):
       raise RuntimeError(
           f"TDM iterate {tc}: iter_count({iter_count}) outside HW range 1~256 (field encodes n-1).")
 
-    # The ceil-divide below is a shift, so only take the runtime path for a
-    # power-of-two tile_dim1; every currently reachable configuration is one.
-    runtimeIterCount = remainRowsSgpr is not None and tile_dim1 & (tile_dim1 - 1) == 0
+    # Bounding the walk needs a register holding this wave's row count; callers that
+    # cannot supply one (the tlu layout, where dim1 is the K extent rather than the
+    # tile height) keep the compile-time count.
+    runtimeIterCount = remainRowsSgpr is not None
 
     # global_inc field = tile_dim1 * strideN * bpe >> dss.
     with self.allocTmpSgpr(2) as tmp:
@@ -19190,19 +19275,7 @@ class KernelWriterAssembly(KernelWriter):
       mod.add(comp.setIterationEnabled(descSgprName(1), True))
       mod.add(comp.setIterationIncrements(descSgprName(2), lds_inc, sGInc))
       if runtimeIterCount:
-        # Every iteration advances the global address by global_inc no matter what
-        # the descriptor's dimension field says, so a partial tile must shorten the
-        # walk itself; otherwise it steps past the end of the tensor.
-        mod.add(SMinU32(dst=sgpr(sIter), src0=sgpr(remainRowsSgpr), src1=rows_per_il,
-                        comment=f"TDM iter rows = min(rows owned by this wave, rows_per_il({rows_per_il}))"))
-        mod.add(SAddU32(dst=sgpr(sIter), src0=sgpr(sIter), src1=(tile_dim1 - 1),
-                        comment=f"round up to a whole tile_dim1({tile_dim1})"))
-        mod.add(SLShiftRightB32(dst=sgpr(sIter), shiftHex=int(log2(tile_dim1)), src=sgpr(sIter),
-                                comment=f"TDM iter_count = ceil(rows / tile_dim1({tile_dim1}))"))
-        mod.add(SMaxU32(dst=sgpr(sIter), src0=sgpr(sIter), src1=1,
-                        comment="waves with no rows still issue one iteration; dimension field clamps the read"))
-        mod.add(SSubU32(dst=sgpr(sIter), src0=sgpr(sIter), src1=1,
-                        comment="iterations field encodes n-1"))
+        self._emitTdmIterCount(mod, sIter, remainRowsSgpr, rows_per_il, tile_dim1)
       else:
         mod.add(SMovB32(sgpr(sIter), hex(iter_count - 1),
                         f"TDM iter_count = rows_per_il({rows_per_il}) / tile_dim1({tile_dim1}) - 1"))
@@ -19455,10 +19528,34 @@ class KernelWriterAssembly(KernelWriter):
       mod.add(SMulI32(sgpr(f"tdm{tc}GlobalSplitIncs"), strideRefG, globalIncConst, comment=f"tdm{tc} Global Split Incs(stride * {mt * bpe // dim1Divisor})"))
 
     if isTdmIter:
-      self._emitTdmIterateInit(mod, kernel, tc, dtype, du, mt,
-                               perIssueLoadRowDivisor=numWaves * dim1Divisor,
-                               descSgprName=descSgprName,
-                               strideRefName=strideRefName)
+      iterArgs = dict(perIssueLoadRowDivisor=numWaves * dim1Divisor,
+                      descSgprName=descSgprName,
+                      strideRefName=strideRefName)
+      if unrolledMajor:
+        # dim1 above is the whole tensor extent, so unlike the wave-separated path it
+        # cannot bound the walk; derive this wave's row count here instead. The tlu
+        # layout keeps the compile-time count because there dim1 is the K extent.
+        rowsPerIl = mt // (numWaves * dim1Divisor)
+        waveSplit = (numWaves * dim1Divisor) > 1
+        with self.allocTmpSgpr(2 if waveSplit else 1,
+                               tag="initTDMDescriptor_tmpRemainRows") as remainRes:
+          remainRowsSgpr = remainRes.idx
+          mod.add(SMulI32(sgpr(remainRowsSgpr), mt, sgpr(f"WorkGroup{ti}")))
+          mod.add(SSubI32(sgpr(remainRowsSgpr), sgpr(sizeRefName(ti)), sgpr(remainRowsSgpr)))
+          if waveSplit:
+            waveRowsSgpr = remainRes.idx + 1
+            mod.add(SMulI32(sgpr(waveRowsSgpr), sgpr("WaveIdx"), rowsPerIl,
+                            f"woffset = WaveIdx * rows_per_il({rowsPerIl})"))
+            mod.add(SSubI32(sgpr(remainRowsSgpr), sgpr(remainRowsSgpr), sgpr(waveRowsSgpr),
+                            "consider multiple waves"))
+            # Signed max rather than the s_sub/s_cmov pair used elsewhere: independent
+            # SALU gets reordered through here, so nothing may rely on SCC surviving.
+            mod.add(SMaxI32(dst=sgpr(remainRowsSgpr), src0=sgpr(remainRowsSgpr), src1=0,
+                            comment="waves past the end of the tile own no rows"))
+          self._emitTdmIterateInit(mod, kernel, tc, dtype, du, mt,
+                                   remainRowsSgpr=remainRowsSgpr, **iterArgs)
+      else:
+        self._emitTdmIterateInit(mod, kernel, tc, dtype, du, mt, **iterArgs)
 
     return mod
 
