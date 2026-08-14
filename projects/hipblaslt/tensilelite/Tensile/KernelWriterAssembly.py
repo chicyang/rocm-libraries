@@ -19153,7 +19153,7 @@ class KernelWriterAssembly(KernelWriter):
     return lbspp // bytes_per_row
 
   def _emitTdmIterateInit(self, mod, kernel, tc, dtype, du, mt, perIssueLoadRowDivisor,
-                          descSgprName, strideRefName):
+                          descSgprName, strideRefName, remainRowsSgpr=None):
     comp = TensorDataMoverLoad.find(self)
     bpe = dtype.numBytes()
     dss = TensorDataMoverLoad.dataSizeShift(dtype)
@@ -19173,6 +19173,10 @@ class KernelWriterAssembly(KernelWriter):
       raise RuntimeError(
           f"TDM iterate {tc}: iter_count({iter_count}) outside HW range 1~256 (field encodes n-1).")
 
+    # The ceil-divide below is a shift, so only take the runtime path for a
+    # power-of-two tile_dim1; every currently reachable configuration is one.
+    runtimeIterCount = remainRowsSgpr is not None and tile_dim1 & (tile_dim1 - 1) == 0
+
     # global_inc field = tile_dim1 * strideN * bpe >> dss.
     with self.allocTmpSgpr(2) as tmp:
       sIter, sGInc = tmp.idx, tmp.idx + 1
@@ -19185,8 +19189,23 @@ class KernelWriterAssembly(KernelWriter):
                                 "fp4 sub-byte: bytes = elements / 2"))
       mod.add(comp.setIterationEnabled(descSgprName(1), True))
       mod.add(comp.setIterationIncrements(descSgprName(2), lds_inc, sGInc))
-      mod.add(SMovB32(sgpr(sIter), hex(iter_count - 1),
-                      f"TDM iter_count = rows_per_il({rows_per_il}) / tile_dim1({tile_dim1}) - 1"))
+      if runtimeIterCount:
+        # Every iteration advances the global address by global_inc no matter what
+        # the descriptor's dimension field says, so a partial tile must shorten the
+        # walk itself; otherwise it steps past the end of the tensor.
+        mod.add(SMinU32(dst=sgpr(sIter), src0=sgpr(remainRowsSgpr), src1=rows_per_il,
+                        comment=f"TDM iter rows = min(rows owned by this wave, rows_per_il({rows_per_il}))"))
+        mod.add(SAddU32(dst=sgpr(sIter), src0=sgpr(sIter), src1=(tile_dim1 - 1),
+                        comment=f"round up to a whole tile_dim1({tile_dim1})"))
+        mod.add(SLShiftRightB32(dst=sgpr(sIter), shiftHex=int(log2(tile_dim1)), src=sgpr(sIter),
+                                comment=f"TDM iter_count = ceil(rows / tile_dim1({tile_dim1}))"))
+        mod.add(SMaxU32(dst=sgpr(sIter), src0=sgpr(sIter), src1=1,
+                        comment="waves with no rows still issue one iteration; dimension field clamps the read"))
+        mod.add(SSubU32(dst=sgpr(sIter), src0=sgpr(sIter), src1=1,
+                        comment="iterations field encodes n-1"))
+      else:
+        mod.add(SMovB32(sgpr(sIter), hex(iter_count - 1),
+                        f"TDM iter_count = rows_per_il({rows_per_il}) / tile_dim1({tile_dim1}) - 1"))
       mod.add(comp.setIterations(descSgprName(2), sIter))
 
   def _emitTdmWaveParitySCC(self, module: Module, kernel: Mapping, dstTmpIdx: Optional[int] = None,
@@ -19549,6 +19568,9 @@ class KernelWriterAssembly(KernelWriter):
 
     with self.allocTmpSgpr(1, tag="initTDMDescriptorWaveSeparatedImpl_tmpSgprRes2") as tmpSgprRes:
       tmpSgprIdx: int = tmpSgprRes.idx
+      # Set once the per-wave row count is known, so the iterate-mode walk can be
+      # bounded by it below.
+      remainRowsSgpr: Optional[int] = None
       mod.add(SMulI32(sgpr(tmpSgprIdx), mt, sgpr(wgIdx)))
       mod.add(SSubI32(sgpr(tmpSgprIdx), sgpr(size), sgpr(tmpSgprIdx)))
       mod.add(comp.setIterationEnabled(descSgprName(1), False))
@@ -19598,9 +19620,19 @@ class KernelWriterAssembly(KernelWriter):
             mod.add(SMulI32(sgpr(tmpSgprWaveOffset), sgpr(tmpSgprWaveOffset), round(mt // numComp // dim1Divisor), "woffset = wId * (mt // numComp // dim1Divisor)"))
             mod.add(SSubU32(sgpr(dim1), sgpr(dim1), sgpr(tmpSgprWaveOffset), "consider multiple waves"))
             mod.add(SCMovB32(sgpr(dim1), 0, "set to 0 for waves that no enough data to load"))
+            remainRowsSgpr = dim1
           mod.add(comp.setTensorDim1(descSgprName(1), dim1, self, 0, False, isSparseTrack if not unrolledMajor else False, isMetadata if not unrolledMajor else False))
           # The descriptor now holds the full per-wave dim1; TDMSplit recomputes
           # the half boundaries from it in globalReadDo.
+
+      if isTdmIter:
+        # Kept inside this scope so remainRowsSgpr is still allocated and cannot
+        # be handed out as one of the iterate-init temporaries.
+        self._emitTdmIterateInit(mod, kernel, tc, dtype, du, mt,
+                                 perIssueLoadRowDivisor=numComp * dim1Divisor,
+                                 descSgprName=descSgprName,
+                                 strideRefName=strideRefName,
+                                 remainRowsSgpr=remainRowsSgpr)
 
     if tc.startswith("MX"):
       #reset to 0 since scale of sizeTile0 and stride for MX is not required
@@ -19640,11 +19672,6 @@ class KernelWriterAssembly(KernelWriter):
 
     # Multi-wave TDMSplit recomputes the LDS/global split increments transiently at
     # point of use (see _tdmSplitMultiWaveInc); nothing is initialized here.
-    if isTdmIter:
-      self._emitTdmIterateInit(mod, kernel, tc, dtype, du, mt,
-                               perIssueLoadRowDivisor=numComp * dim1Divisor,
-                               descSgprName=descSgprName,
-                               strideRefName=strideRefName)
 
     return mod
 
