@@ -6733,6 +6733,13 @@ class KernelWriter(metaclass=abc.ABCMeta):
         module.addComment1("shift vector components d1")
         module.add(self.shiftVectorComponents(kernel, tensorParametersB))
 
+    # TDM iterate mode pulls the boundary component's load pointer back instead
+    # of clamping a per-thread offset, so it needs its own un-shift.
+    for tP in (tensorParametersA, tensorParametersB):
+      if kernel.get("_TDMIterEdgeShift%s" % tP["tensorChar"], False):
+        module.addComment1("TDM iterate edge un-shift %s" % tP["tensorChar"])
+        module.add(Component.TDMIterateUnshift.find(self)(self, kernel, tP))
+
     # dot2: WaveSplitK reduction
     if kernel["NumWaveSplitK"] > 1:
       module.add(self.waveSplitKReduction(kernel))

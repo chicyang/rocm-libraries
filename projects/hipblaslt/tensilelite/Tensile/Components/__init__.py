@@ -53,4 +53,5 @@ __all__ = [
     "TensorDataMover",
     "GL2Prefetch",
     "ClusterLoad",
+    "TDMIterateUnshift",
     ]

@@ -276,6 +276,10 @@ class ShiftVectorComponents(Component):
     Shift vector components block.
     """
 
+class TDMIterateUnshift(Component):
+    """Undo the TDM iterate-mode free-dimension edge shift in the accumulators."""
+    pass
+
 class ComputeStoreVgprs(Component):
     """
     Compute store vgprs block.

@@ -4,7 +4,7 @@ from ..Common import INDEX_CHARS
 from typing import Mapping, Optional
 from rocisa.code import Module, Label
 from rocisa.instruction import SMovB32, SMovB64, SOrB32, SAndB32, SLShiftLeftB32, SLShiftLeftB64, \
-    SLShiftRightB32, SAddU32, SAddCU32, SMulI32, SBranch, SCBranchSCC1, SCSelectB32, TensorLoadToLds, \
+    SLShiftRightB32, SAddU32, SAddCU32, SSubU32, SSubBU32, SMulI32, SBranch, SCBranchSCC1, SCSelectB32, TensorLoadToLds, \
     VReadfirstlaneB32
 from rocisa.container import sgpr, vgpr, RegisterContainer, ContinuousRegister, MemTokenData
 from rocisa.functions import scalarMultiply64Bpe
@@ -357,6 +357,13 @@ class TensorDataMoverLoad(TensorDataMover):
         mod.addComment("TDM increment global addr")
         mod.add(SAddU32(sgpr(f"{group0}+2"), sgpr(f"{group0}+2"), sgpr(sgprIncrement), "TDM increment lo"))
         mod.add(SAddCU32(sgpr(f"{group0}+3"), sgpr(f"{group0}+3"), 0, "TDM increment hi (carry)"))
+        return mod
+
+    def decrementGlobalAddr(self, writer: "KernelWriterAssembly", group0: int | str, sgprDecrement: int | str) -> Module:
+        mod = Module()
+        mod.addComment("TDM decrement global addr")
+        mod.add(SSubU32(sgpr(f"{group0}+2"), sgpr(f"{group0}+2"), sgpr(sgprDecrement), "TDM decrement lo"))
+        mod.add(SSubBU32(sgpr(f"{group0}+3"), sgpr(f"{group0}+3"), 0, "TDM decrement hi (borrow)"))
         return mod
 
     def setIterationEnabled(self, group1, enabled: bool) -> Module:

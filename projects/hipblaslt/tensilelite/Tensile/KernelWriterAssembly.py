@@ -79,6 +79,7 @@ from .Components.GlobalWriteBatch import GlobalWriteBatchWriter, emitFusedA2AGat
 from .KernelWriterModules import *
 from .AsmMemoryHelpers import dsStore, dsLoad, _vgprOffset
 from .SolutionStructs import isPackedIndex
+from .SolutionStructs import tdm_iterate_edge
 from .AsmStoreState import StoreState, VectorDataTypes
 from .Activation import ActivationType
 from .CustomKernels import isCustomKernelConfig, getCustomKernelSource
@@ -19651,6 +19652,37 @@ class KernelWriterAssembly(KernelWriter):
 
     return mod
 
+  def tdmIterEdgeDelta(self, mod, kernel, tc, ti, rowsSgpr, dstDelta):
+    """delta = (-min(rows, MacroTile)) mod tile_dim1, into sgpr(dstDelta).
+
+    Clamping to MacroTile makes every workgroup but the last in this dimension
+    produce delta == 0, because MacroTile is a whole number of walk steps."""
+    g = tdm_iterate_edge.geometry(kernel, tc)
+    td = g["tileDim1"]
+    mt = kernel["MacroTile%u" % ti]
+    with self.allocTmpSgpr(1, tag="tdmIterEdgeDelta") as tmp:
+      mod.add(SMinU32(dst=sgpr(dstDelta), src0=sgpr(rowsSgpr), src1=mt,
+                      comment="rows = min(Size - wg*MT, MT(%u))" % mt))
+      mod.add(SAndB32(sgpr(dstDelta), sgpr(dstDelta), td - 1,
+                      "rows %% tile_dim1(%u)" % td))
+      mod.add(SSubU32(dst=sgpr(tmp.idx), src0=td, src1=sgpr(dstDelta)))
+      mod.add(SAndB32(sgpr(dstDelta), sgpr(tmp.idx), td - 1,
+                      "delta = (-rows) mod tile_dim1(%u)" % td))
+
+  def tdmIterEdgeOwner(self, mod, kernel, tc, ti, rowsSgpr, dstOwner):
+    """cOwn = min(rows, MacroTile) // rowsPerWave, into sgpr(dstOwner).
+
+    The component that holds the partial row count; it is the only one whose
+    base is pulled back."""
+    g = tdm_iterate_edge.geometry(kernel, tc)
+    rpw = g["rowsPerWave"]
+    mt = kernel["MacroTile%u" % ti]
+    mod.add(SMinU32(dst=sgpr(dstOwner), src0=sgpr(rowsSgpr), src1=mt,
+                    comment="rows = min(Size - wg*MT, MT(%u))" % mt))
+    mod.add(SLShiftRightB32(dst=sgpr(dstOwner), shiftHex=int(log2(rpw)),
+                            src=sgpr(dstOwner),
+                            comment="cOwn = rows / rowsPerWave(%u)" % rpw))
+
   def initTDMDescriptorWaveSeparatedImpl(self, kernel, tP, waveIdxSgpr: int | str = "WaveIdx") -> Module:
     comp: TensorDataMoverLoad = TensorDataMoverLoad.find(self)
     tc: str = tP['tensorChar']
@@ -19763,6 +19795,24 @@ class KernelWriterAssembly(KernelWriter):
       remainRowsSgpr: Optional[int] = None
       mod.add(SMulI32(sgpr(tmpSgprIdx), mt, sgpr(wgIdx)))
       mod.add(SSubI32(sgpr(tmpSgprIdx), sgpr(size), sgpr(tmpSgprIdx)))
+      edgeShift = kernel.get("_TDMIterEdgeShift%s" % tc, False) and isTdmIter
+      if edgeShift:
+        # Invariant: the edge shift is an unroll-major mechanism. `dim1` is the
+        # tile height only when unrolledMajor, and the pull-back below lives in
+        # the unrolledMajor branch; Solution.py rejects iterate mode on a tlu
+        # tensor, which is what keeps the two in step.
+        assert unrolledMajor, "TDM iterate edge shift requires an unroll-major tensor"
+        # dim1 widens for every component; only the boundary component's base
+        # moves. A full component ends up with an over-declared bound, but its
+        # walk is rowsPerWave rows inside [0, rows), so it never reads past the
+        # tensor. An empty component still clamps to zero below, because
+        # rows + delta = ceil(rows/tile_dim1)*tile_dim1 <= (cOwn+1)*rowsPerWave.
+        edgeDeltaSgpr = self.sgprPool.checkOut(1, tag="tdmIterEdgeDelta%s" % tc, preventOverflow=False)
+        edgeOwnerSgpr = self.sgprPool.checkOut(1, tag="tdmIterEdgeOwner%s" % tc, preventOverflow=False)
+        self.tdmIterEdgeDelta(mod, kernel, tc, ti, tmpSgprIdx, edgeDeltaSgpr)
+        self.tdmIterEdgeOwner(mod, kernel, tc, ti, tmpSgprIdx, edgeOwnerSgpr)
+        mod.add(SAddU32(sgpr(tmpSgprIdx), sgpr(tmpSgprIdx), sgpr(edgeDeltaSgpr),
+                        "TDM edge: rows += delta so every component walks whole steps"))
       mod.add(comp.setIterationEnabled(descSgprName(1), False))
       if isTdmIter:
         # Iterate-mode supplies the pad via the LDS write stride; disable pad_interval.
@@ -19810,10 +19860,34 @@ class KernelWriterAssembly(KernelWriter):
             mod.add(SMulI32(sgpr(tmpSgprWaveOffset), sgpr(tmpSgprWaveOffset), round(mt // numComp // dim1Divisor), "woffset = wId * (mt // numComp // dim1Divisor)"))
             mod.add(SSubU32(sgpr(dim1), sgpr(dim1), sgpr(tmpSgprWaveOffset), "consider multiple waves"))
             mod.add(SCMovB32(sgpr(dim1), 0, "set to 0 for waves that no enough data to load"))
+            if edgeShift:
+              # sgpr(tmpSgprWaveOffset) still holds wId * rowsPerWave; recover wId.
+              with self.allocTmpSgpr(2, tag="tdmIterEdgeBase") as edgeTmp:
+                wIdSgpr, byteSgpr = edgeTmp.idx, edgeTmp.idx + 1
+                rpw = tdm_iterate_edge.geometry(kernel, tc)["rowsPerWave"]
+                mod.add(SLShiftRightB32(dst=sgpr(wIdSgpr), shiftHex=int(log2(rpw)),
+                                        src=sgpr(tmpSgprWaveOffset), comment="wId"))
+                strRef = strideRefName()
+                srcArg = strRef if isinstance(strRef, RegisterContainer) else sgpr(strRef)
+                mod.add(SMulI32(sgpr(byteSgpr), sgpr(edgeDeltaSgpr), srcArg,
+                                "TDM edge: delta * strideN (elements)"))
+                mod.add(SLShiftLeftB32(dst=sgpr(byteSgpr), shiftHex=int(log2(bpe)),
+                                       src=sgpr(byteSgpr),
+                                       comment="TDM edge: * bpe(%u) -> bytes" % int(bpe)))
+                mod.add(SCmpEQU32(src0=sgpr(wIdSgpr), src1=sgpr(edgeOwnerSgpr),
+                                  comment="is this the boundary component?"))
+                mod.add(SCSelectB32(sgpr(byteSgpr), sgpr(byteSgpr), 0,
+                                    "only the boundary component pulls back"))
+                mod.add(comp.decrementGlobalAddr(self, descSgprName(0), byteSgpr))
             remainRowsSgpr = dim1
           mod.add(comp.setTensorDim1(descSgprName(1), dim1, self, 0, False, isSparseTrack if not unrolledMajor else False, isMetadata if not unrolledMajor else False))
           # The descriptor now holds the full per-wave dim1; TDMSplit recomputes
           # the half boundaries from it in globalReadDo.
+
+      if edgeShift:
+        # Same scope as the check-out above, so the pair cannot drift apart.
+        self.sgprPool.checkIn(edgeOwnerSgpr)
+        self.sgprPool.checkIn(edgeDeltaSgpr)
 
       if isTdmIter:
         # Inside this scope so remainRowsSgpr is still allocated and cannot be handed

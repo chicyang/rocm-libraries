@@ -60,6 +60,7 @@ from Tensile.Components.CustomSchedule import hasCustomSchedule
 
 from ..Component import TensorDataMover
 from ..Components.TensorDataMover import TensorDataMoverLoad
+from . import tdm_iterate_edge
 from .Utilities import TDM_PAD_INTERVAL_LIMIT, isSubtileIterateMode, reject, roundupRatio, pvar
 from .Validators.MXScaleFormat import validateMXScaleFormatCombination
 
@@ -5183,33 +5184,23 @@ class Solution(collections.abc.Mapping):
     state["LdsBlockSizePerPadB"] = int(state["LdsBlockSizePerPadB"])
     state["LdsBlockSizePerPadMetadata"] = int(state["LdsBlockSizePerPadMetadata"])
 
-    # The iterate walk steps a whole tile_dim1 rows at a time, so a wave left with a
-    # row count that is not a whole number of steps reads past the end of the tensor
-    # on its last step. A wave's row count differs from the free size only by whole
-    # multiples of MacroTile and of the rows one issueLoad covers, and the codegen
-    # guard keeps the latter a whole number of steps -- so requiring the free size to
-    # be a multiple of the step is enough to keep every wave on whole steps.
-    #
-    # Subtile builds its descriptors elsewhere, so it is not described by this.
-    for tc, freeIdx in (("A", 0), ("B", 1)):
-      if state["UseSubtileImpl"] or not state.get("_TDMIterateMode%s" % tc, False):
-        continue
-      # tile_dim1 as the descriptor carries it: rows of DepthU input elements.
-      bytesPerRow = int(round(state["DepthU"] * state["ProblemType"]["DataType%s" % tc].numBytes()))
-      lbspp = state["LdsBlockSizePerPad%s" % tc]
-      if bytesPerRow <= 0 or lbspp % bytesPerRow != 0:
-        continue  # the codegen guard reports the real reason
-      tileDim1 = lbspp // bytesPerRow
-      if tileDim1 <= 1:
-        continue
-      mt = state["MacroTile%u" % freeIdx]
-      if mt % tileDim1 != 0:
-        reject(state, printRejectionReason,
-               "TDM iterate %s: MacroTile%u(%u) is not a multiple of tile_dim1(%u)"
-               % (tc, freeIdx, mt, tileDim1))
+    # Iterate mode either pulls the boundary component's base back (edge shift,
+    # see SolutionStructs/tdm_iterate_edge.py) or constrains the free size to a
+    # whole number of walk steps. The oracle picks per tensor and records the
+    # choice in _TDMIterEdgeShift{A,B}, which KernelWriterAssembly reads.
+    # The un-shift reads and writes accumulators, which requires them to be in
+    # arch VGPRs. WMMA forces MIArchVgpr on further down, so hand the oracle the
+    # effective value rather than the flag's current state.
+    # This predicate mirrors the "force MIArchVgpr when using WMMA" assignment
+    # later in this function; keep the two in step.
+    miArchVgprEffective = bool(
+        state["MIArchVgpr"]
+        or (state["EnableMatrixInstruction"] and isaInfoMap[isa].asmCaps["HasWMMA"])
+    )
+    if not tdm_iterate_edge.apply_policy(
+        state, lambda msg: reject(state, printRejectionReason, msg), miArchVgprEffective
+    ):
         return
-      key = "AssertFree%uElementMultiple" % freeIdx
-      state[key] = int(math.lcm(state[key], tileDim1))
 
     if (state["UnrollMajorLDSA"] or state["UnrollMajorLDSB"]) and (not state["EnableMatrixInstruction"]) and (not state["UseDotInstruction"]):
         reject(state, printRejectionReason, "UnrollMajorLDS Supports only in EnableMatrixInstruction=1 or dot2 kernel")
@@ -5611,6 +5602,8 @@ class Solution(collections.abc.Mapping):
       return
 
     # force MIArchVgpr when using WMMA
+    # The TDM iterate edge-shift policy above runs before this point and
+    # reproduces this predicate as miArchVgprEffective; keep the two in step.
     if state["EnableMatrixInstruction"] and isaInfoMap[isa].asmCaps["HasWMMA"]:
       state["MIArchVgpr"] = True
 
