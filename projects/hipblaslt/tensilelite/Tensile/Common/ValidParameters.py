@@ -1231,7 +1231,35 @@ validParameters = { # we need to make sure this matches develop
     # 1: Use iterate-mode for A
     # 2: Use iterate-mode for B
     # 3: Use iterate-mode for both A and B
-    "TDMIterateMode": [-1, 0, 1, 2, 3]
+    "TDMIterateMode": [-1, 0, 1, 2, 3],
+
+    # Band-level pointer shift that lets an A-side iterate-mode kernel accept free
+    # sizes that are not a multiple of the iterate walk step.
+    #
+    # A workgroup tile is split along M into one band per wave component. The band
+    # holding the M edge starts its walk delta = (-SizeI) % tile_dim1 rows earlier,
+    # so the walk ends exactly on SizeI and every step stays inside the tensor. The
+    # store path re-labels the affected accumulator slots and masks the delta rows
+    # the band borrowed from its upstream neighbour, which are written there.
+    #
+    # Serving a free size at or below rows_per_il additionally requires a
+    # host-side predicate that is not in place yet. rows_per_il is
+    # MacroTile{0,1} / numComp, where numComp is NumWaves/2 under the
+    # wave-separated descriptors and 1 when a single wave owns the tile -- so for
+    # NumWaves == 1 the unsafe region is the whole first tile. The
+    # edge band is then the first band of the first workgroup and has no upstream
+    # rows to borrow, so the shift walks off the front of the tensor. Enabling
+    # this is safe only where the caller keeps SizeI above rows_per_il, which is
+    # why it stays off by default.
+    #
+    # 0: Disabled — AssertFree{0,1}ElementMultiple keeps every wave on whole steps
+    # 1: Enabled for A / M, where the geometry qualifies
+    # 2: Also enabled for B / N. Along N the correction cannot ride on a store
+    #    coordinate -- no address reads coord1, each is its own row pointer
+    #    advanced by a scalar increment -- so the step back is applied to the C
+    #    and D addresses in bytes, and every other output tensor is excluded.
+    #    It is kept separate from 1 because it carries that narrower scope.
+    "TDMIterateEdgeShift": [0, 1, 2]
 }
 
 newMIValidParameters = {

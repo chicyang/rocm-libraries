@@ -1,0 +1,381 @@
+# Copyright Advanced Micro Devices, Inc., or its affiliates.
+# SPDX-License-Identifier: MIT
+
+# TDM iterate mode over free sizes that are not a multiple of the walk step.
+#
+# The iterate walk advances tile_dim1 rows per step, so a band left with a row
+# count that is not a whole number of steps would read past the end of the
+# tensor. TDMIterateEdgeShift moves the band holding the edge back
+# delta = (-freeSize) % tile_dim1 rows, which lands its final step exactly on
+# the free size; the store path re-labels the affected slots and masks the delta
+# rows that band borrowed from its upstream neighbour.
+#
+# The last group covers B, where the edge runs along N. There the correction
+# cannot ride on a store coordinate -- no address reads coord1, each is its own
+# row pointer advanced by a scalar increment -- so it lands on the C and D byte
+# addresses instead, and the other output tensors are excluded.
+#
+# BoundsCheck is GuardPageAll on purpose. Numeric validation alone cannot show
+# that the walk stayed inside the tensor: rows read just outside it are masked
+# out at store, so an out-of-bounds kernel still compares equal. Guard pages are
+# what turn a stray access into a failure.
+#
+# Every M below satisfies `M % tile_dim1 == 0 or M > rows_per_il`. Sizes outside
+# that are not served: the edge band would be the first band of the first
+# workgroup, which has no upstream rows to borrow.
+TestParameters:
+  marks: [skip-gfx900, skip-gfx906, skip-gfx908, skip-gfx90a, skip-gfx940, skip-gfx941, skip-gfx942, skip-gfx950, skip-gfx1010, skip-gfx1011, skip-gfx1012, skip-gfx1030, skip-gfx1100, skip-gfx1101, skip-gfx1102, skip-gfx1200, skip-gfx1201]
+GlobalParameters:
+  SyncsPerBenchmark: 0
+  NumElementsToValidate: -1
+  KernelTime: False
+  BoundsCheck: 4
+  ValidationMaxToPrint: 8
+  ValidationPrintValids: False
+  PruneSparseMode: 0
+  DataInitTypeA: 3
+  DataInitTypeB: 3
+  DataInitTypeC: 3
+  DataInitTypeD: 2
+  DataInitTypeAlpha: 1
+  DataInitTypeBeta: 2
+  NumWarmups: 0
+  EnqueuesPerSync: 1
+  PrintWinnersOnly: True
+  Architecture: gfx1250
+  CpuThreads: 1
+  PrintLevel: 2
+  CodeObjectVersion: "4"
+
+BenchmarkProblems:
+  ########################################
+  # TN, wave-separated: two bands of 128 rows, walk step 8
+  ########################################
+  -
+    - # ProblemType
+      OperationType: GEMM
+      DataType: b
+      DestDataType: b
+      ComputeDataType: s
+      HighPrecisionAccumulate: True
+      TransposeA: True
+      TransposeB: False
+      UseBeta: True
+      Batched: True
+      Activation: False
+      SupportUserArgs: True
+      UseBias: 0
+
+    - # BenchmarkProblemSizeGroup - Standard
+      InitialSolutionParameters:
+      BenchmarkCommonParameters:
+        - KernelLanguage: ["Assembly"]
+      ForkParameters:
+        - MatrixInstruction:
+          - [16, 16, 32, 1, 1, 8, 4, 2, 2]
+        - DepthU: [128]
+        - TransposeLDS: [-1]
+        - LdsPadA: [-1]
+        - LdsPadB: [-1]
+        - LdsBlockSizePerPadA: [-1]
+        - LdsBlockSizePerPadB: [-1]
+        - LdsPadMetadata: [0]
+        - TDMInst: [3]
+        - TDMIterateMode: [1]
+        - TDMIterateEdgeShift: [1]
+        - LDSTrInst: [False]
+        - StaggerU: [0]
+        - ScheduleIterAlg: [0]
+        - PrefetchLocalRead: [1]
+        - PrefetchGlobalRead: [2]
+        - StoreRemapVectorWidth: [0]
+        - GlobalSplitU: [1]
+        - GlobalSplitUAlgorithm: [MultipleBuffer]
+        - GlobalReadVectorWidthA: [-1]
+        - GlobalReadVectorWidthB: [-1]
+        - VectorWidthA: [8]
+        - VectorWidthB: [-1]
+        - LocalReadVectorWidth: [8]
+        - 1LDSBuffer: [0]
+        - SourceSwap: [false]
+        - DirectToVgprSparseMetadata: [false]
+        - WorkGroupMapping: [1]
+        - StoreVectorWidth: [-1]
+        - DirectToVgprA: [False]
+        - DirectToVgprB: [False]
+        - WavefrontSize: [32]
+        - ExpandPointerSwap: [false]
+        - GroupLoadStore: [False]
+      BenchmarkForkParameters:
+      JoinParameters:
+      BenchmarkJoinParameters:
+      BenchmarkFinalParameters:
+        - ProblemSizes:
+          # delta 0..7 with the edge band starting a workgroup, so the borrowed
+          # rows come from the workgroup above.
+          - Exact: [256, 256, 1, 512]
+          - Exact: [257, 256, 1, 512]
+          - Exact: [258, 256, 1, 512]
+          - Exact: [259, 256, 1, 512]
+          - Exact: [260, 256, 1, 512]
+          - Exact: [261, 256, 1, 512]
+          - Exact: [262, 256, 1, 512]
+          - Exact: [263, 256, 1, 512]
+          # delta 0..7 with the borrow staying inside one workgroup.
+          - Exact: [248, 256, 1, 512]
+          - Exact: [249, 256, 1, 512]
+          - Exact: [252, 256, 1, 512]
+          - Exact: [255, 256, 1, 512]
+          # The edge band is the second band of the tile.
+          - Exact: [385, 256, 1, 512]
+          # Smallest served size, and one magnitude with several workgroups.
+          - Exact: [129, 256, 1, 512]
+          - Exact: [1025, 256, 1, 512]
+          - Exact: [263, 300, 1, 128]
+        - ActivationArgs:
+          - [Enum: none]
+
+  ########################################
+  # TN, wave-separated: two bands of 64 rows, walk step 4
+  ########################################
+  -
+    - # ProblemType
+      OperationType: GEMM
+      DataType: b
+      DestDataType: b
+      ComputeDataType: s
+      HighPrecisionAccumulate: True
+      TransposeA: True
+      TransposeB: False
+      UseBeta: True
+      Batched: True
+      Activation: False
+      SupportUserArgs: True
+      UseBias: 0
+
+    - # BenchmarkProblemSizeGroup - Standard
+      InitialSolutionParameters:
+      BenchmarkCommonParameters:
+        - KernelLanguage: ["Assembly"]
+      ForkParameters:
+        - MatrixInstruction:
+          - [16, 16, 32, 1, 1, 4, 4, 2, 2]
+        - DepthU: [256]
+        - TransposeLDS: [-1]
+        - LdsPadA: [-1]
+        - LdsPadB: [-1]
+        - LdsBlockSizePerPadA: [-1]
+        - LdsBlockSizePerPadB: [-1]
+        - LdsPadMetadata: [0]
+        - TDMInst: [3]
+        - TDMIterateMode: [1]
+        - TDMIterateEdgeShift: [1]
+        - LDSTrInst: [False]
+        - StaggerU: [0]
+        - ScheduleIterAlg: [0]
+        - PrefetchLocalRead: [1]
+        - PrefetchGlobalRead: [2]
+        - StoreRemapVectorWidth: [0]
+        - GlobalSplitU: [1]
+        - GlobalSplitUAlgorithm: [MultipleBuffer]
+        - GlobalReadVectorWidthA: [-1]
+        - GlobalReadVectorWidthB: [-1]
+        - VectorWidthA: [4]
+        - VectorWidthB: [-1]
+        - LocalReadVectorWidth: [8]
+        - 1LDSBuffer: [0]
+        - SourceSwap: [false]
+        - DirectToVgprSparseMetadata: [false]
+        - WorkGroupMapping: [1]
+        - StoreVectorWidth: [-1]
+        - DirectToVgprA: [False]
+        - DirectToVgprB: [False]
+        - WavefrontSize: [32]
+        - ExpandPointerSwap: [false]
+        - GroupLoadStore: [False]
+      BenchmarkForkParameters:
+      JoinParameters:
+      BenchmarkJoinParameters:
+      BenchmarkFinalParameters:
+        - ProblemSizes:
+          # rows_per_il is 64 here, so 65 is the smallest served size.
+          - Exact: [64, 256, 1, 512]
+          - Exact: [65, 256, 1, 512]
+          - Exact: [66, 256, 1, 512]
+          - Exact: [67, 256, 1, 512]
+          - Exact: [128, 256, 1, 512]
+          - Exact: [129, 256, 1, 512]
+          - Exact: [130, 256, 1, 512]
+          - Exact: [131, 256, 1, 512]
+          - Exact: [253, 256, 1, 512]
+          - Exact: [254, 256, 1, 512]
+          - Exact: [255, 256, 1, 512]
+          - Exact: [257, 256, 1, 512]
+          - Exact: [511, 256, 1, 512]
+          - Exact: [767, 256, 1, 512]
+        - ActivationArgs:
+          - [Enum: none]
+
+  ########################################
+  # TN, single wave: one band spanning the whole tile, walk step 8
+  ########################################
+  -
+    - # ProblemType
+      OperationType: GEMM
+      DataType: b
+      DestDataType: b
+      ComputeDataType: s
+      HighPrecisionAccumulate: True
+      TransposeA: True
+      TransposeB: False
+      UseBeta: True
+      Batched: True
+      Activation: False
+      SupportUserArgs: True
+      UseBias: 0
+
+    - # BenchmarkProblemSizeGroup - Standard
+      InitialSolutionParameters:
+      BenchmarkCommonParameters:
+        - KernelLanguage: ["Assembly"]
+      ForkParameters:
+        # MIWaveGroup [1,1] leaves one wave holding the tile, so the descriptor
+        # is built by the non-wave-separated path and rows_per_il is MacroTile0.
+        - MatrixInstruction:
+          - [16, 16, 32, 1, 1, 8, 1, 1, 1]
+        - DepthU: [128]
+        - TransposeLDS: [-1]
+        - LdsPadA: [-1]
+        - LdsPadB: [-1]
+        - LdsBlockSizePerPadA: [-1]
+        - LdsBlockSizePerPadB: [-1]
+        - LdsPadMetadata: [0]
+        - TDMInst: [3]
+        - TDMIterateMode: [1]
+        - TDMIterateEdgeShift: [1]
+        - LDSTrInst: [False]
+        - StaggerU: [0]
+        - ScheduleIterAlg: [0]
+        - PrefetchLocalRead: [1]
+        - PrefetchGlobalRead: [2]
+        - StoreRemapVectorWidth: [0]
+        - GlobalSplitU: [1]
+        - GlobalSplitUAlgorithm: [MultipleBuffer]
+        - GlobalReadVectorWidthA: [-1]
+        - GlobalReadVectorWidthB: [-1]
+        - VectorWidthA: [8]
+        - VectorWidthB: [-1]
+        - LocalReadVectorWidth: [8]
+        - 1LDSBuffer: [0]
+        - SourceSwap: [false]
+        - DirectToVgprSparseMetadata: [false]
+        - WorkGroupMapping: [1]
+        - StoreVectorWidth: [-1]
+        - DirectToVgprA: [False]
+        - DirectToVgprB: [False]
+        - WavefrontSize: [32]
+        - ExpandPointerSwap: [false]
+        - GroupLoadStore: [False]
+      BenchmarkForkParameters:
+      JoinParameters:
+      BenchmarkJoinParameters:
+      BenchmarkFinalParameters:
+        - ProblemSizes:
+          # The single band always borrows from the previous workgroup's tile.
+          - Exact: [128, 256, 1, 512]
+          - Exact: [129, 256, 1, 512]
+          - Exact: [130, 256, 1, 512]
+          - Exact: [131, 256, 1, 512]
+          - Exact: [136, 256, 1, 512]
+          - Exact: [139, 256, 1, 512]
+          - Exact: [256, 256, 1, 512]
+          - Exact: [257, 256, 1, 512]
+          - Exact: [259, 256, 1, 512]
+          - Exact: [385, 256, 1, 512]
+          - Exact: [513, 256, 1, 512]
+          - Exact: [771, 256, 1, 512]
+        - ActivationArgs:
+          - [Enum: none]
+
+  ########################################
+  # TN, B side: the edge runs along N, two bands of 128 columns, walk step 8
+  ########################################
+  -
+    - # ProblemType
+      OperationType: GEMM
+      DataType: b
+      DestDataType: b
+      ComputeDataType: s
+      HighPrecisionAccumulate: True
+      TransposeA: True
+      TransposeB: False
+      UseBeta: True
+      Batched: True
+      Activation: False
+      SupportUserArgs: True
+      UseBias: 0
+
+    - # BenchmarkProblemSizeGroup - Standard
+      InitialSolutionParameters:
+      BenchmarkCommonParameters:
+        - KernelLanguage: ["Assembly"]
+      ForkParameters:
+        - MatrixInstruction:
+          - [16, 16, 32, 1, 1, 4, 8, 2, 2]
+        - DepthU: [128]
+        - TransposeLDS: [-1]
+        - LdsPadA: [-1]
+        - LdsPadB: [-1]
+        - LdsBlockSizePerPadA: [-1]
+        - LdsBlockSizePerPadB: [-1]
+        - LdsPadMetadata: [0]
+        - TDMInst: [3]
+        - TDMIterateMode: [2]
+        - TDMIterateEdgeShift: [2]
+        - LDSTrInst: [False]
+        - StaggerU: [0]
+        - ScheduleIterAlg: [0]
+        - PrefetchLocalRead: [1]
+        - PrefetchGlobalRead: [2]
+        - StoreRemapVectorWidth: [0]
+        - GlobalSplitU: [1]
+        - GlobalSplitUAlgorithm: [MultipleBuffer]
+        - GlobalReadVectorWidthA: [-1]
+        - GlobalReadVectorWidthB: [-1]
+        - VectorWidthA: [-1]
+        - VectorWidthB: [8]
+        - LocalReadVectorWidth: [8]
+        - 1LDSBuffer: [0]
+        - SourceSwap: [false]
+        - DirectToVgprSparseMetadata: [false]
+        - WorkGroupMapping: [1]
+        - StoreVectorWidth: [-1]
+        - DirectToVgprA: [False]
+        - DirectToVgprB: [False]
+        - WavefrontSize: [32]
+        - ExpandPointerSwap: [false]
+        - GroupLoadStore: [False]
+      BenchmarkForkParameters:
+      JoinParameters:
+      BenchmarkJoinParameters:
+      BenchmarkFinalParameters:
+        - ProblemSizes:
+          # delta 0..7 along N. Unlike A, the correction cannot ride on a
+          # store coordinate, so it is applied to the C and D byte addresses.
+          - Exact: [256, 256, 1, 512]
+          - Exact: [256, 257, 1, 512]
+          - Exact: [256, 258, 1, 512]
+          - Exact: [256, 259, 1, 512]
+          - Exact: [256, 260, 1, 512]
+          - Exact: [256, 261, 1, 512]
+          - Exact: [256, 262, 1, 512]
+          - Exact: [256, 263, 1, 512]
+          - Exact: [256, 264, 1, 512]
+          - Exact: [256, 384, 1, 512]
+          - Exact: [256, 385, 1, 512]
+          - Exact: [256, 388, 1, 512]
+          - Exact: [256, 391, 1, 512]
+          - Exact: [256, 512, 1, 512]
+          - Exact: [256, 519, 1, 512]
+        - ActivationArgs:
+          - [Enum: none]

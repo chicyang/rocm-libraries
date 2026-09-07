@@ -25,8 +25,8 @@ from rocisa.container import EXEC, VCC, vgpr, sgpr
 from rocisa.instruction import MacroInstruction, SAddCU32, SAddU32, SAndB32, \
     SAndB64, SLShiftLeftB32, SMovB32, SMovB64, SMulI32, SSubBU32, SSubU32, \
     VAddCCOU32, VAddCOU32, VAddI32, VAddU32, VAndB32, VBfiB32, \
-    VCmpEQU32, VCmpGtU32, VCmpLtU32, VCmpXNeU32, VCndMaskB32, VLShiftLeftB32, \
-    VMadI32I24, VMovB32, VMulLOU32, VSubI32, VSubU32
+    VCmpEQU32, VCmpGEU32, VCmpGtU32, VCmpLtU32, VCmpXNeU32, VCndMaskB32, VLShiftLeftB32, \
+    VMadI32I24, VMaxI32, VMovB32, VMulLOU32, VSubI32, VSubU32
 from rocisa.functions import vectorAddMultiplyBpe, vectorMultiply64Bpe
 from .Common import INDEX_CHARS, DataDirection, log2
 
@@ -623,6 +623,114 @@ class AddrCalculation:
 
         return module
 
+    def emitTdmEdgeShiftFixup(self, module, kernel):
+        """Re-label this element's row for an A tile whose edge band was shifted.
+
+        The band holding the M edge loaded from `delta` rows earlier than its slots
+        name, so a slot at or past `bandOrigin` holds row `coord0 - delta`, and the
+        first `delta` slots of that band hold rows their upstream neighbour already
+        owns. Points `self.coord0Vgpr` at the corrected row and returns the lane mask
+        that drops the borrowed ones, or None when this kernel does not shift.
+
+        `u = coord0 - bandOrigin` decides both: slots above the band wrap it to a
+        value larger than the tile, which selects no shift and keeps the lane, so the
+        sequence costs an unshifted workgroup nothing beyond the instructions.
+        """
+        kw = self.kernelWriter
+        coordVgpr = kw.states.tdmEdgeShiftCoordVgpr
+        if coordVgpr is None:
+            return None
+        # delta would be subtracted twice; the caller must protect an element once.
+        assert self.coord0Vgpr != coordVgpr, \
+            "TDM edge shift applied twice to one element"
+
+        deltaSgpr = kw.states.tdmEdgeShiftDeltaSgpr
+        originSgpr = kw.states.tdmEdgeShiftOriginSgpr
+        keepSgpr = kw.states.tdmEdgeShiftKeepSgpr
+        laneSGPRCount = kw.states.laneSGPRCount
+        mt0 = kernel["MacroTile0"]
+
+        module.addComment0("TDM edge shift: re-label coord0 and drop borrowed rows")
+        module.add(VSubU32(dst=vgpr(coordVgpr), src0=vgpr(self.coord0Vgpr), src1=sgpr(originSgpr),
+                           comment="u = coord0 - bandOrigin"))
+        module.add(VCmpLtU32(dst=VCC(), src0=vgpr(coordVgpr), src1=mt0,
+                             comment="u < MT0(%u): this slot sits in or below the shifted band" % mt0))
+        module.add(VCmpGEU32(dst=sgpr(keepSgpr, laneSGPRCount), src0=vgpr(coordVgpr), src1=sgpr(deltaSgpr),
+                             comment="u >= delta: not a row borrowed from the band above"))
+        module.add(VSubU32(dst=vgpr(coordVgpr), src0=vgpr(self.coord0Vgpr), src1=sgpr(deltaSgpr),
+                           comment="coord0 - delta"))
+        module.add(VCndMaskB32(dst=vgpr(coordVgpr), src0=vgpr(self.coord0Vgpr), src1=vgpr(coordVgpr),
+                               src2=VCC(), comment="take the shifted row only inside the band"))
+        # Bias and the scale vectors index LDS by `coord0 - wg0*MT0`. A slot the
+        # band borrowed from the workgroup above re-labels below this tile's base
+        # and would wrap that index. Kept slots are never below it, so the clamp
+        # only moves slots the keep mask already drops.
+        module.add(VMaxI32(dst=vgpr(coordVgpr), src0=vgpr(coordVgpr),
+                           src1=sgpr(kw.states.tdmEdgeShiftBaseSgpr),
+                           comment="clamp borrowed slots to this tile's base row"))
+        self.coord0Vgpr = coordVgpr
+        return keepSgpr
+
+    def emitTdmEdgeShiftFixupN(self, module, kernel):
+        """Re-label this element's column for a B tile whose edge band was shifted.
+
+        Unlike coord0, `self.coord1Vgpr` is a single register shared by every
+        element and advanced in place by a relative row increment, and no address
+        derives from it -- each address is its own row pointer plus coord0. So the
+        corrected column goes to a scratch register used only for the bounds check,
+        and the addresses are stepped back separately in `applyTdmEdgeShiftN`.
+
+        Returns the lane mask that drops the columns the band borrowed, or None.
+        """
+        kw = self.kernelWriter
+        coordVgpr = kw.states.tdmEdgeShiftNCoordVgpr
+        if coordVgpr is None:
+            return None
+        assert self.coord1Vgpr != coordVgpr, \
+            "TDM edge shift (N) applied twice to one element"
+
+        deltaSgpr = kw.states.tdmEdgeShiftNDeltaSgpr
+        originSgpr = kw.states.tdmEdgeShiftNOriginSgpr
+        keepSgpr = kw.states.tdmEdgeShiftNKeepSgpr
+        inBandSgpr = kw.states.tdmEdgeShiftNInBandSgpr
+        n = kw.states.laneSGPRCount
+        mt1 = kernel["MacroTile1"]
+
+        module.addComment0("TDM edge shift (N): re-label coord1 and drop borrowed columns")
+        module.add(VSubU32(dst=vgpr(coordVgpr), src0=vgpr(self.coord1Vgpr), src1=sgpr(originSgpr),
+                           comment="u = coord1 - bandOrigin"))
+        module.add(VCmpLtU32(dst=sgpr(inBandSgpr, n), src0=vgpr(coordVgpr), src1=mt1,
+                             comment="u < MT1(%u): this column sits in or below the shifted band" % mt1))
+        module.add(VCmpGEU32(dst=sgpr(keepSgpr, n), src0=vgpr(coordVgpr), src1=sgpr(deltaSgpr),
+                             comment="u >= delta: not a column borrowed from the band above"))
+        module.add(VSubU32(dst=vgpr(coordVgpr), src0=vgpr(self.coord1Vgpr), src1=sgpr(deltaSgpr),
+                           comment="coord1 - delta"))
+        module.add(VCndMaskB32(dst=vgpr(coordVgpr), src0=vgpr(self.coord1Vgpr), src1=vgpr(coordVgpr),
+                               src2=sgpr(inBandSgpr, n),
+                               comment="take the shifted column only inside the band"))
+        module.add(VMaxI32(dst=vgpr(coordVgpr), src0=vgpr(coordVgpr),
+                           src1=sgpr(kw.states.tdmEdgeShiftNBaseSgpr),
+                           comment="clamp borrowed slots to this tile's base column"))
+        # Only the bounds check and the LDS-indexed vectors read it; the shared
+        # coord1 must keep advancing by its relative row increment.
+        self.coord1Vgpr = coordVgpr
+        return keepSgpr
+
+    def applyTdmEdgeShiftN(self, module, kernel, addrVgpr, tc):
+        """Step this tensor's address back by the columns its band borrowed."""
+        kw = self.kernelWriter
+        byteSgpr = kw.states.tdmEdgeShiftNBytes.get(tc) if kw.states.tdmEdgeShiftNCoordVgpr is not None else None
+        if byteSgpr is None:
+            return
+        n = kw.states.laneSGPRCount
+        tmp = kw.states.tdmEdgeShiftNAddrVgpr
+        module.add(VMovB32(dst=vgpr(tmp), src=sgpr(byteSgpr), comment="%s step back, in bytes" % tc))
+        module.add(VCndMaskB32(dst=vgpr(tmp), src0=0, src1=vgpr(tmp),
+                               src2=sgpr(kw.states.tdmEdgeShiftNInBandSgpr, n),
+                               comment="only lanes inside the shifted band"))
+        module.add(VSubU32(dst=vgpr(addrVgpr), src0=vgpr(addrVgpr), src1=vgpr(tmp),
+                           comment="LD%s: -= edge band step back" % tc))
+
     def edgeProtectCode(self, kernel, edge, beta, atomic, mask, tmpSgpr):
         """
         Generate code to protect address offset in edge case
@@ -649,10 +757,23 @@ class AddrCalculation:
                     sgpr("PackedSize1") if len(kernel["PackedC1IndicesX"]) > 1 \
                     else kw.sizeRef(kernel["ProblemType"]["Index1"])
 
+                # Re-label this element's row and mark the borrowed rows before the
+                # bounds checks read coord0Vgpr, so both feed off the corrected value.
+                keepSgpr = self.emitTdmEdgeShiftFixup(module, kernel)
+                keepSgprN = self.emitTdmEdgeShiftFixupN(module, kernel)
+
                 module.add(VCmpLtU32(dst=sgpr(tmpS01,laneSGPRCount), src0=vgpr(self.coord0Vgpr), src1=sizeBoundary[0], comment="coord0 < size0" ))
                 module.add(VCmpLtU32(dst=sgpr(mask,laneSGPRCount), src0=vgpr(self.coord1Vgpr), src1=sizeBoundary[1], comment="coord1 < size1" ))
                 SAndX = SAndB64 if wavefrontSize == 64 else SAndB32
                 module.add(SAndX(dst=sgpr(mask,laneSGPRCount), src0=sgpr(tmpS01,laneSGPRCount), src1=sgpr(mask,laneSGPRCount), comment="in0 && in1" ))
+                if keepSgpr is not None:
+                  module.add(SAndX(dst=sgpr(mask,laneSGPRCount), src0=sgpr(mask,laneSGPRCount),
+                                   src1=sgpr(keepSgpr,laneSGPRCount),
+                                   comment="&& not a row the shifted band borrowed"))
+                if keepSgprN is not None:
+                  module.add(SAndX(dst=sgpr(mask,laneSGPRCount), src0=sgpr(mask,laneSGPRCount),
+                                   src1=sgpr(keepSgprN,laneSGPRCount),
+                                   comment="&& not a column the shifted band borrowed"))
         else:
             module.add(VCmpLtU32(dst=sgpr(tmpS01,laneSGPRCount), src0=vgpr(self.coord0Vgpr), src1=sgpr("SizesFree+0"), comment="coord0 < size0" ))
             module.add(VCmpLtU32(dst=sgpr(tmpS23,laneSGPRCount), src0=vgpr(self.coord1Vgpr), src1=sgpr("SizesFree+1"), comment="coord1 < size1" ))
@@ -801,6 +922,9 @@ class AddrCalculation:
         isSingleKernel = ((kernel["GlobalSplitU"] == 1 or kernel["GlobalSplitU"] == -1) or kernel["_GlobalAccumulation"] == "MultipleBufferSingleKernel") or kernel["StreamK"] > 0
         if kernel["BufferStore"]:
             module.add(self.emitScaleToBpe(kernel, ss, tmpVgpr, tmpSgpr, singleUpdate, tc, dim))
+            # The N-side shift cannot ride on a coordinate, so it lands here, on the
+            # finished byte address, before the OOB clip consumes it.
+            self.applyTdmEdgeShiftN(module, kernel, addrVgpr, tc)
             if edge and (not kernel["StoreRemapVectorWidth"] or (kernel["StoreRemapVectorWidth"] and (beta or kernel["_GlobalAccumulation"] == "MultipleBufferSingleKernel"))) and \
                 (tc != 'ScaleAlphaVec' and (not (tc == 'Bias' and self.kernelWriter.states.useBias == DataDirection.READ)) and tc != 'ScaleAVec' and tc != 'ScaleBVec'):
                 module.add(VCndMaskB32(dst=vgpr(addrVgpr), src0=vgpr(bufferOOB), src1=vgpr(addrVgpr), \

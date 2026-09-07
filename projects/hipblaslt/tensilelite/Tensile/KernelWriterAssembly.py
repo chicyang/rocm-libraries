@@ -79,7 +79,7 @@ from .Components.ClusterLoad import ClusterLoadTDM
 from .Components.GlobalWriteBatch import GlobalWriteBatchWriter
 from .KernelWriterModules import *
 from .AsmMemoryHelpers import dsStore, dsLoad, _vgprOffset
-from .SolutionStructs import isPackedIndex
+from .SolutionStructs import isPackedIndex, tdmIterEdgeShiftGeometry
 from .AsmStoreState import StoreState, VectorDataTypes
 from .Activation import ActivationType
 from .CustomKernels import isCustomKernelConfig, supportsUserSgprKernargPreload
@@ -107,7 +107,7 @@ def _nonVolatile(kernel, tc):
   return NonVolatile(kernel.get("NonVolatile%s"%_cacheHintTensor(tc), 0))
 
 from math import ceil, floor, log, prod
-from contextlib import contextmanager
+from contextlib import contextmanager, ExitStack
 from copy import deepcopy
 from dataclasses import dataclass, field
 from functools import lru_cache
@@ -16392,6 +16392,65 @@ class KernelWriterAssembly(KernelWriter):
       and kernel.get("UseSubtileImpl")
       and kernel["_GlobalAccumulation"] not in ("MultipleBufferSingleKernel", "MultipleBuffer")
     )
+    # A tile whose M edge was absorbed by a band shift reaches store with some
+    # accumulator slots holding a row other than the one their coord0 names, and
+    # with the rows the shifted band borrowed from its neighbour held twice. Both
+    # are resolved per element in AddrCalculation.edgeProtectCode, which needs
+    # delta and the shifted band's first global row.
+    #
+    # delta > 0 implies SizeI is not a multiple of MacroTile0 and the shift only
+    # takes effect in the workgroup holding the edge, so every shifted workgroup
+    # lands on the edge path and the non-edge path needs none of this.
+    edgeShiftGeo = self._tdmEdgeShiftGeometry(kernel, "A") if edge else None
+    if edgeShiftGeo is not None:
+      self.states.tdmEdgeShiftDeltaSgpr = self.sgprPool.checkOut(1, "tdmEdgeShiftDelta", preventOverflow=False)
+      self.states.tdmEdgeShiftOriginSgpr = self.sgprPool.checkOut(1, "tdmEdgeShiftOrigin", preventOverflow=False)
+      self.states.tdmEdgeShiftKeepSgpr = self.sgprPool.checkOutAligned(
+          self.states.laneSGPRCount, self.states.laneSGPRCount, "tdmEdgeShiftKeep", preventOverflow=False)
+      self.states.tdmEdgeShiftBaseSgpr = self.sgprPool.checkOut(1, "tdmEdgeShiftBase", preventOverflow=False)
+      self.states.tdmEdgeShiftCoordVgpr = self.vgprPool.checkOut(1, "tdmEdgeShiftCoord0")
+      with self.allocTmpSgpr(1, tag="globalWriteElementBatch_edgeShiftTmp") as edgeShiftTmp:
+        self._emitTdmEdgeShiftScalars(edgeModule, kernel, edgeShiftGeo,
+                                      self.states.tdmEdgeShiftDeltaSgpr,
+                                      self.states.tdmEdgeShiftOriginSgpr,
+                                      edgeShiftTmp.idx, bandAsOrigin=True,
+                                      baseSgpr=self.states.tdmEdgeShiftBaseSgpr)
+
+    # The N counterpart. Along N the shift cannot ride on a coordinate, because
+    # no address reads coord1: each address is its own row pointer plus coord0,
+    # and the row pointer advances by a scalar row increment. So the step back is
+    # applied to each address in bytes, which needs delta scaled by that tensor's
+    # row stride and element size once per store path.
+    edgeShiftGeoN = self._tdmEdgeShiftGeometry(kernel, "B") if edge else None
+    if edgeShiftGeoN is not None:
+      st = self.states
+      st.tdmEdgeShiftNDeltaSgpr = self.sgprPool.checkOut(1, "tdmEdgeShiftNDelta", preventOverflow=False)
+      st.tdmEdgeShiftNOriginSgpr = self.sgprPool.checkOut(1, "tdmEdgeShiftNOrigin", preventOverflow=False)
+      st.tdmEdgeShiftNKeepSgpr = self.sgprPool.checkOutAligned(
+          st.laneSGPRCount, st.laneSGPRCount, "tdmEdgeShiftNKeep", preventOverflow=False)
+      st.tdmEdgeShiftNInBandSgpr = self.sgprPool.checkOutAligned(
+          st.laneSGPRCount, st.laneSGPRCount, "tdmEdgeShiftNInBand", preventOverflow=False)
+      st.tdmEdgeShiftNCoordVgpr = self.vgprPool.checkOut(1, "tdmEdgeShiftCoord1")
+      st.tdmEdgeShiftNAddrVgpr = self.vgprPool.checkOut(1, "tdmEdgeShiftNAddr")
+      st.tdmEdgeShiftNBaseSgpr = self.sgprPool.checkOut(1, "tdmEdgeShiftNBase", preventOverflow=False)
+      st.tdmEdgeShiftNBytes = {}
+      with self.allocTmpSgpr(1, tag="globalWriteElementBatch_edgeShiftNTmp") as edgeShiftTmp:
+        self._emitTdmEdgeShiftScalars(edgeModule, kernel, edgeShiftGeoN,
+                                      st.tdmEdgeShiftNDeltaSgpr,
+                                      st.tdmEdgeShiftNOriginSgpr,
+                                      edgeShiftTmp.idx, bandAsOrigin=True,
+                                      baseSgpr=st.tdmEdgeShiftNBaseSgpr)
+      idx1 = kernel["ProblemType"]["Index1"]
+      for tc, bpe in (("C", self.states.bpeCexternal), ("D", self.states.bpeCexternal)):
+        # strideRef, not a built name: a compile-time unit stride has no sgpr.
+        rowStride = self.strideRef(tc, idx1)
+        byteSgpr = self.sgprPool.checkOut(1, "tdmEdgeShiftNBytes%s" % tc, preventOverflow=False)
+        edgeModule.add(SMulI32(dst=sgpr(byteSgpr), src0=sgpr(st.tdmEdgeShiftNDeltaSgpr),
+                               src1=rowStride, comment="delta * %s row stride" % tc))
+        edgeModule.add(SMulI32(dst=sgpr(byteSgpr), src0=sgpr(byteSgpr), src1=bpe,
+                               comment="* bpe(%u): %s step back in bytes" % (bpe, tc)))
+        st.tdmEdgeShiftNBytes[tc] = byteSgpr
+
     if isSubtileNonEdge:
       self._emitSubtileGuards(kernel, edgeModule)
     else:
@@ -16502,6 +16561,37 @@ class KernelWriterAssembly(KernelWriter):
     #################
     # Free after final vgpr calculation
     # Only free locally-allocated guard SGPRs, not permanent ones (SubtileMGuard).
+    if self.states.tdmEdgeShiftDeltaSgpr is not None:
+      self.sgprPool.checkIn(self.states.tdmEdgeShiftDeltaSgpr)
+      self.sgprPool.checkIn(self.states.tdmEdgeShiftOriginSgpr)
+      self.sgprPool.checkIn(self.states.tdmEdgeShiftKeepSgpr)
+      self.sgprPool.checkIn(self.states.tdmEdgeShiftBaseSgpr)
+      self.vgprPool.checkIn(self.states.tdmEdgeShiftCoordVgpr)
+      self.states.tdmEdgeShiftDeltaSgpr = None
+      self.states.tdmEdgeShiftOriginSgpr = None
+      self.states.tdmEdgeShiftKeepSgpr = None
+      self.states.tdmEdgeShiftBaseSgpr = None
+      self.states.tdmEdgeShiftCoordVgpr = None
+
+    if self.states.tdmEdgeShiftNDeltaSgpr is not None:
+      self.sgprPool.checkIn(self.states.tdmEdgeShiftNDeltaSgpr)
+      self.sgprPool.checkIn(self.states.tdmEdgeShiftNOriginSgpr)
+      self.sgprPool.checkIn(self.states.tdmEdgeShiftNKeepSgpr)
+      self.sgprPool.checkIn(self.states.tdmEdgeShiftNBaseSgpr)
+      self.sgprPool.checkIn(self.states.tdmEdgeShiftNInBandSgpr)
+      self.vgprPool.checkIn(self.states.tdmEdgeShiftNCoordVgpr)
+      self.vgprPool.checkIn(self.states.tdmEdgeShiftNAddrVgpr)
+      for byteSgpr in self.states.tdmEdgeShiftNBytes.values():
+        self.sgprPool.checkIn(byteSgpr)
+      self.states.tdmEdgeShiftNDeltaSgpr = None
+      self.states.tdmEdgeShiftNOriginSgpr = None
+      self.states.tdmEdgeShiftNKeepSgpr = None
+      self.states.tdmEdgeShiftNBaseSgpr = None
+      self.states.tdmEdgeShiftNInBandSgpr = None
+      self.states.tdmEdgeShiftNCoordVgpr = None
+      self.states.tdmEdgeShiftNAddrVgpr = None
+      self.states.tdmEdgeShiftNBytes = {}
+
     if self.states.subtileTotalMOffsetSgpr is not None:
       self.sgprPool.checkIn(self.states.subtileTotalMOffsetSgpr)
       self.states.subtileTotalMOffsetSgpr = None
@@ -19055,6 +19145,58 @@ class KernelWriterAssembly(KernelWriter):
           f"bytes_per_row({bytes_per_row}=round(DepthU*bpe)).")
     return lbspp // bytes_per_row
 
+  def _emitTdmEdgeShiftScalars(self, mod, kernel, geo, deltaSgpr, bandSgpr, tmpSgpr,
+                               bandAsOrigin=False, baseSgpr=None):
+    """Compute the scalars `tc`'s edge shift is expressed in terms of.
+
+    `deltaSgpr` receives delta = (-freeSize) % tileDim1, the distance the edge
+    band moves back so its walk ends exactly on the free size.
+
+    `bandSgpr` receives the index of the band holding the edge, or -- with
+    `bandAsOrigin` -- the global row that band starts at. For every workgroup
+    other than the one holding the edge the index lands at or above numComp, so
+    no band matches it and the shift costs those workgroups nothing.
+    """
+    log2Rows = int(log2(geo.rowsPerIl))
+    sizeName = "SizeI" if geo.tc == "A" else "SizeJ"
+    wgName = "WorkGroup%u" % geo.freeIdx
+    mod.addComment1("TDM iterate edge shift %s: delta = (-%s) %% tileDim1(%u), edge band of %u rows"
+                    % (geo.tc, sizeName, geo.tileDim1, geo.rowsPerIl))
+    mod.add(SSubU32(dst=sgpr(deltaSgpr), src0=0, src1=sgpr(sizeName)))
+    mod.add(SAndB32(dst=sgpr(deltaSgpr), src0=sgpr(deltaSgpr), src1=geo.tileDim1 - 1,
+                    comment="delta = (-%s) %% %u" % (sizeName, geo.tileDim1)))
+    mod.add(SMulI32(dst=sgpr(tmpSgpr), src0=sgpr(wgName), src1=geo.mt,
+                    comment="%s * MT%u(%u)" % (wgName, geo.freeIdx, geo.mt)))
+    mod.add(SSubU32(dst=sgpr(bandSgpr), src0=sgpr(sizeName), src1=sgpr(tmpSgpr),
+                    comment="rows of the tensor this tile still reaches"))
+    mod.add(SLShiftRightB32(dst=sgpr(bandSgpr), shiftHex=log2Rows, src=sgpr(bandSgpr),
+                            comment="edge band index = that / rowsPerIl(%u)" % geo.rowsPerIl))
+    if bandAsOrigin:
+      mod.add(SLShiftLeftB32(dst=sgpr(bandSgpr), shiftHex=log2Rows, src=sgpr(bandSgpr),
+                             comment="edge band start, in rows of the tile"))
+      mod.add(SAddU32(dst=sgpr(bandSgpr), src0=sgpr(bandSgpr), src1=sgpr(tmpSgpr),
+                      comment="bandOrigin = %s * MT%u + bandStart" % (wgName, geo.freeIdx)))
+    if baseSgpr is not None:
+      # This tile's first global row. The bias and scale vectors index LDS by
+      # `coord - wg*MT`, and a slot the band borrowed from the workgroup above
+      # re-labels below that, so the corrected coordinate is clamped here. Only
+      # borrowed slots are affected, and they are dropped by the keep mask.
+      mod.add(SMulI32(dst=sgpr(baseSgpr), src0=sgpr(wgName), src1=geo.mt,
+                      comment="tile base row = %s * MT%u" % (wgName, geo.freeIdx)))
+
+  def _tdmEdgeShiftGeometry(self, kernel, tc=None):
+    """Band geometry when this kernel shifts `tc`'s edge band, else None.
+
+    Only the A and B data tensors are shifted; the scale and metadata tensors,
+    and a caller that asks about none in particular, get None.
+    """
+    if tc not in ("A", "B"):
+      return None
+    cache = self.states.tdmEdgeShiftGeoCache
+    if tc not in cache:
+      cache[tc] = tdmIterEdgeShiftGeometry(kernel, tc)
+    return cache[tc]
+
   def _emitTdmIterCount(self, mod, sIter, remainRowsSgpr, rows_per_il, tile_dim1):
     """Leave the iterations field value in sgpr(sIter).
 
@@ -19468,6 +19610,20 @@ class KernelWriterAssembly(KernelWriter):
         remainRowsSgpr = remainRes.idx
         mod.add(SMulI32(sgpr(remainRowsSgpr), mt, sgpr(f"WorkGroup{ti}")))
         mod.add(SSubI32(sgpr(remainRowsSgpr), sgpr(sizeRefName(ti)), sgpr(remainRowsSgpr)))
+        # One wave means one band covering the whole tile, so the edge band is
+        # this tile whenever the tensor ends inside it. Its base moved back delta
+        # rows, which is delta more rows to walk.
+        edgeGeo = self._tdmEdgeShiftGeometry(kernel, tc)
+        if edgeGeo is not None:
+          with self.allocTmpSgpr(3, tag="initTDMDescriptor_edgeShift") as shiftRes:
+            deltaSgpr, bandSgpr, scratchSgpr = shiftRes.idx, shiftRes.idx + 1, shiftRes.idx + 2
+            self._emitTdmEdgeShiftScalars(mod, kernel, edgeGeo, deltaSgpr, bandSgpr, scratchSgpr)
+            mod.add(SCmpEQU32(src0=sgpr(bandSgpr), src1=0,
+                              comment="does the tensor end inside this tile?"))
+            mod.add(SCSelectB32(dst=sgpr(scratchSgpr), src0=sgpr(deltaSgpr), src1=0,
+                                comment="extra rows to walk, 0 once the tile is full"))
+            mod.add(SAddU32(sgpr(remainRowsSgpr), sgpr(remainRowsSgpr), sgpr(scratchSgpr),
+                            "+= the rows the edge band stepped back over"))
         mod.add(comp.setTensorDim1(descSgprName(1), remainRowsSgpr, self, 0, False))
         self._emitTdmIterateInit(mod, kernel, tc, dtype, du, mt,
                                  perIssueLoadRowDivisor=numWaves * dim1Divisor,
@@ -19632,9 +19788,27 @@ class KernelWriterAssembly(KernelWriter):
           if unrolledMajor:
             mod.add(VReadfirstlaneB32(sgpr(tmpSgprWaveOffset), vgpr("Serial"), "first tId"))
             mod.add(SLShiftRightB32(sgpr(tmpSgprWaveOffset), ceil(log2(wavelen)) + 1, sgpr(tmpSgprWaveOffset), "wId=fTid // wavelen // 2"))
-            mod.add(SMulI32(sgpr(tmpSgprWaveOffset), sgpr(tmpSgprWaveOffset), round(mt // numComp // dim1Divisor), "woffset = wId * (mt // numComp // dim1Divisor)"))
-            mod.add(SSubU32(sgpr(dim1), sgpr(dim1), sgpr(tmpSgprWaveOffset), "consider multiple waves"))
-            mod.add(SCMovB32(sgpr(dim1), 0, "set to 0 for waves that no enough data to load"))
+            # The edge band's base moved back delta rows, so its walk covers delta
+            # rows more than the tile still reaches. That lands the row count on a
+            # whole number of steps, which is what keeps the walk inside the tensor.
+            edgeGeo = self._tdmEdgeShiftGeometry(kernel, tc) if isTdmIter else None
+            with ExitStack() as edgeStack:
+              edgeDeltaSgpr = None
+              if edgeGeo is not None:
+                shiftRes = edgeStack.enter_context(
+                    self.allocTmpSgpr(3, tag="initTDMDescriptorWaveSeparatedImpl_edgeShift"))
+                deltaSgpr, bandSgpr, edgeDeltaSgpr = shiftRes.idx, shiftRes.idx + 1, shiftRes.idx + 2
+                self._emitTdmEdgeShiftScalars(mod, kernel, edgeGeo, deltaSgpr, bandSgpr, edgeDeltaSgpr)
+                mod.add(SCmpEQU32(src0=sgpr(tmpSgprWaveOffset), src1=sgpr(bandSgpr),
+                                  comment="does this wave component hold the M edge?"))
+                mod.add(SCSelectB32(dst=sgpr(edgeDeltaSgpr), src0=sgpr(deltaSgpr), src1=0,
+                                    comment="extra rows to walk, 0 for every other band"))
+              mod.add(SMulI32(sgpr(tmpSgprWaveOffset), sgpr(tmpSgprWaveOffset), round(mt // numComp // dim1Divisor), "woffset = wId * (mt // numComp // dim1Divisor)"))
+              mod.add(SSubU32(sgpr(dim1), sgpr(dim1), sgpr(tmpSgprWaveOffset), "consider multiple waves"))
+              mod.add(SCMovB32(sgpr(dim1), 0, "set to 0 for waves that no enough data to load"))
+              if edgeDeltaSgpr is not None:
+                mod.add(SAddU32(sgpr(dim1), sgpr(dim1), sgpr(edgeDeltaSgpr),
+                                "+= the rows the edge band stepped back over"))
             remainRowsSgpr = dim1
           mod.add(comp.setTensorDim1(descSgprName(1), dim1, self, 0, False, isSparseTrack if not unrolledMajor else False, isMetadata if not unrolledMajor else False))
           # The descriptor now holds the full per-wave dim1; TDMSplit recomputes

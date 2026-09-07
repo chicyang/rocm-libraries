@@ -280,6 +280,31 @@ class StateValues:
   storeAlign8: bool                      = False
   subtileTotalMOffsetSgpr: Optional[int] = None
 
+  # Live only inside an edge store path that absorbs an M edge by band-level
+  # pointer shift: delta, the global row the shifted band starts at, and the vgpr
+  # holding each element's re-labelled coord0.
+  tdmEdgeShiftDeltaSgpr: Optional[int]   = None
+  tdmEdgeShiftOriginSgpr: Optional[int]  = None
+  tdmEdgeShiftKeepSgpr: Optional[int]    = None
+  tdmEdgeShiftBaseSgpr: Optional[int]    = None
+  tdmEdgeShiftCoordVgpr: Optional[int]   = None
+
+  # The N-direction counterparts. `tdmEdgeShiftNInBandSgpr` marks the lanes whose
+  # address needs the step back, and `tdmEdgeShiftNBytes` maps a tensor char to
+  # the sgpr holding delta * that tensor's row stride * its bpe.
+  tdmEdgeShiftNDeltaSgpr: Optional[int]  = None
+  tdmEdgeShiftNOriginSgpr: Optional[int] = None
+  tdmEdgeShiftNKeepSgpr: Optional[int]   = None
+  tdmEdgeShiftNBaseSgpr: Optional[int]  = None
+  tdmEdgeShiftNInBandSgpr: Optional[int] = None
+  tdmEdgeShiftNCoordVgpr: Optional[int]  = None
+  tdmEdgeShiftNAddrVgpr: Optional[int]  = None
+  tdmEdgeShiftNBytes: dict               = field(default_factory=dict)
+  # Resolved once per kernel: globalWriteElements temporarily rewrites
+  # _GlobalAccumulation / StreamK / GlobalSplitU, so re-deriving the geometry
+  # at store time can disagree with what the load path already committed to.
+  tdmEdgeShiftGeoCache: dict            = field(default_factory=dict)
+
   a: ABMatrixInfo                        = field(default_factory=ABMatrixInfo)
   b: ABMatrixInfo                        = field(default_factory=ABMatrixInfo)
   mxsa: ABMatrixInfo                     = field(default_factory=ABMatrixInfo)

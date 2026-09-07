@@ -1,3 +1,5 @@
+from contextlib import ExitStack
+
 from ..Component import TensorDataMover
 from ..Common.DataType import DataType
 from ..Common import INDEX_CHARS
@@ -5,7 +7,7 @@ from typing import Mapping, Optional
 from rocisa.code import Module, Label
 from rocisa.instruction import SMovB32, SMovB64, SOrB32, SAndB32, SLShiftLeftB32, SLShiftLeftB64, \
     SLShiftRightB32, SAddU32, SAddCU32, SMulI32, SBranch, SCBranchSCC1, TensorLoadToLds, \
-    VReadfirstlaneB32
+    SCmpEQU32, SCSelectB32, SSubU32, SSubBU32, VReadfirstlaneB32
 from rocisa.container import sgpr, vgpr, RegisterContainer, ContinuousRegister, MemTokenData
 from rocisa.functions import scalarMultiply64Bpe
 from math import log2, ceil, prod
@@ -122,6 +124,25 @@ class TensorDataMoverLoad(TensorDataMover):
                 mod.add(SMulI32(sgpr(waveOffsetSgprIdx), sgpr(waveOffsetSgprIdx), tdmSeparateStride, f"woffset *= stride"))
             mod.add(SAddU32(sgpr(tmpSgprIdx), sgpr(tmpSgprIdx), sgpr(waveOffsetSgprIdx), "+= woffset"))
             mod.add(SAddCU32(sgpr(tmpSgprIdx+1), sgpr(tmpSgprIdx+1), 0, "+= woffset carry"))
+            # One wave owns the whole tile, so the single band steps back delta rows
+            # whenever the tensor ends inside this tile. Applied to the 64-bit base:
+            # the step back reaches into the previous workgroup's tile.
+            geo = writer._tdmEdgeShiftGeometry(kernel, tc)
+            if geo is not None:
+                with writer.allocTmpSgpr(3, tag="TensorDataMoverLoad_edgeShift") as shiftRes:
+                    deltaSgpr, bandSgpr, edgeShiftSgpr = shiftRes.idx, shiftRes.idx + 1, shiftRes.idx + 2
+                    writer._emitTdmEdgeShiftScalars(mod, kernel, geo, deltaSgpr, bandSgpr, edgeShiftSgpr)
+                    mod.add(SCmpEQU32(src0=sgpr(bandSgpr), src1=0,
+                                      comment="does the tensor end inside this tile?"))
+                    mod.add(SCSelectB32(dst=sgpr(edgeShiftSgpr), src0=sgpr(deltaSgpr), src1=0,
+                                        comment="rows to step back, 0 once the tile is full"))
+                    mod.add(SMulI32(sgpr(edgeShiftSgpr), sgpr(edgeShiftSgpr), round(bpe), f"* bpe({bpe})"))
+                    mod.add(SMulI32(sgpr(edgeShiftSgpr), sgpr(edgeShiftSgpr), tdmSeparateStride,
+                                    "edge band step back, in bytes"))
+                    mod.add(SSubU32(sgpr(tmpSgprIdx), sgpr(tmpSgprIdx), sgpr(edgeShiftSgpr),
+                                    "-= edge band step back"))
+                    mod.add(SSubBU32(sgpr(tmpSgprIdx+1), sgpr(tmpSgprIdx+1), 0,
+                                     "-= edge band step back borrow"))
             #add GSU offset
             if kernel["GlobalSplitU"] > 0 or kernel["GlobalSplitU"] == -1:
                 gsuOffsetSgprIdx = waveOffsetSgprIdx
@@ -183,11 +204,13 @@ class TensorDataMoverLoad(TensorDataMover):
 
         mod.addComment(f"TDM wave separated calc start addr of {tc}")
 
-        with writer.allocTmpSgpr(3, tag="TensorDataMoverLoadWaveSeparated_tmpSgprRes") as tmpSgprRes:
+        with writer.allocTmpSgpr(3, tag="TensorDataMoverLoadWaveSeparated_tmpSgprRes") as tmpSgprRes, \
+             ExitStack() as edgeStack:
             numComp: int = numWaves // 2
             assert numComp & (numComp - 1) == 0, "numComp must be power of 2"
             tmpSgprIdx = tmpSgprRes.idx
             waveOffsetSgprIdx = tmpSgprRes.idx + 2
+            edgeShiftSgpr = None
             mod.add(SMovB64(sgpr(tmpSgprIdx, 2), 0))
             if ("MXS" in tc):
                 mod.add(SMulI32(sgpr(tmpSgprIdx), sgpr(sgprWorkgroupName), round(mxUnit * mt * bpe), f"wgId * mxUnit({mxUnit}) * MT({mt}) * bpe({bpe})"))
@@ -208,10 +231,37 @@ class TensorDataMoverLoad(TensorDataMover):
                     # M/N-splitting: offset within same k_group along tile dimension
                     mod.add(SMulI32(sgpr(waveOffsetSgprIdx), sgpr(waveOffsetSgprIdx), round(mt // numComp * mxUnit * bpe), f"woffset = wCompId * mt//numComp({mt // numComp}) * mxUnit({mxUnit}) * bpe({bpe})"))
             else:
+                # The band holding the M edge starts its walk delta rows earlier so
+                # the walk ends exactly on SizeI. woffset itself has to stay
+                # non-negative -- it reaches the 64-bit base through an unsigned add
+                # whose carry-in assumes that -- so the step back is applied to the
+                # base below, as a borrowing 64-bit subtract.
+                geo = writer._tdmEdgeShiftGeometry(kernel, tc)
+                if geo is not None:
+                    shiftRes = edgeStack.enter_context(
+                        writer.allocTmpSgpr(3, tag="TensorDataMoverLoadWaveSeparated_edgeShift"))
+                    deltaSgpr, bandSgpr, edgeShiftSgpr = shiftRes.idx, shiftRes.idx + 1, shiftRes.idx + 2
+                    writer._emitTdmEdgeShiftScalars(mod, kernel, geo, deltaSgpr, bandSgpr, edgeShiftSgpr)
+                    mod.add(SCmpEQU32(src0=sgpr(waveOffsetSgprIdx), src1=sgpr(bandSgpr),
+                                      comment="does this wave component hold the M edge?"))
+                    mod.add(SCSelectB32(dst=sgpr(edgeShiftSgpr), src0=sgpr(deltaSgpr), src1=0,
+                                        comment="rows to step back, 0 for every other band"))
+                    mod.add(SMulI32(sgpr(edgeShiftSgpr), sgpr(edgeShiftSgpr), round(bpe),
+                                    f"* bpe({bpe})"))
+                    mod.add(SMulI32(sgpr(edgeShiftSgpr), sgpr(edgeShiftSgpr), tdmSeparateStride,
+                                    "edge band step back, in bytes"))
                 mod.add(SMulI32(sgpr(waveOffsetSgprIdx), sgpr(waveOffsetSgprIdx), round(tile1Size // numComp * bpe // tdmSplit), f"woffset = wCompId * mt // numComp({numComp}) * bpe({bpe}) // tdmSplit({tdmSplit})"))
                 mod.add(SMulI32(sgpr(waveOffsetSgprIdx), sgpr(waveOffsetSgprIdx), tdmSeparateStride, f"woffset *= tdmSeparateStride"))
             mod.add(SAddU32(sgpr(tmpSgprIdx), sgpr(tmpSgprIdx), sgpr(waveOffsetSgprIdx), "+= woffset"))
             mod.add(SAddCU32(sgpr(tmpSgprIdx+1), sgpr(tmpSgprIdx+1), 0, "+= woffset carry"))
+            if edgeShiftSgpr is not None:
+                # Applied to the 64-bit base rather than folded into woffset: the step
+                # back can reach past the start of this workgroup's tile, and woffset
+                # feeds an unsigned add whose carry-in would turn that into a 4 GB jump.
+                mod.add(SSubU32(sgpr(tmpSgprIdx), sgpr(tmpSgprIdx), sgpr(edgeShiftSgpr),
+                                "-= edge band step back"))
+                mod.add(SSubBU32(sgpr(tmpSgprIdx+1), sgpr(tmpSgprIdx+1), 0,
+                                 "-= edge band step back borrow"))
             #add GSU offset
             if kernel["GlobalSplitU"] > 0 or kernel["GlobalSplitU"] == -1:
                 gsuOffsetSgprIdx = waveOffsetSgprIdx

@@ -27,7 +27,7 @@ import math
 import sys
 
 from enum import Enum
-from typing import List, Dict, Literal, Tuple
+from typing import List, Dict, Literal, NamedTuple, Tuple
 
 from Tensile.AsmStoreState import VectorDataTypes
 from Tensile.Activation import ActivationType
@@ -337,6 +337,158 @@ def _validateStreamKMulticast(state, printRejectionReason, isaInfoMap):
 
 _cacheHintTensors = ("A", "B", "C", "D", "E", "MXSA", "MXSB", "WS", "Metadata")
 _cacheHintLoadTensors = ("A", "B", "C", "E", "MXSA", "MXSB", "WS", "Metadata")
+
+
+def tdmIterTileDim1(state, tc):
+  """Rows one iterate walk step covers for `tc`, or None when it does not apply.
+
+  The descriptor walks a whole pad block at a time, so this is the pad block
+  measured in rows of DepthU input elements. KernelWriterAssembly._tdmIterTileDim1
+  computes the same quantity from a DepthU already divided by the MX / sparse /
+  metadata factors; the two agree wherever those factors are 1.
+  """
+  bpe = state["ProblemType"]["DataType%s" % tc].numBytes()
+  bytesPerRow = int(round(state["DepthU"] * bpe))
+  lbspp = state["LdsBlockSizePerPad%s" % tc]
+  if bytesPerRow <= 0 or lbspp % bytesPerRow != 0:
+    return None
+  return lbspp // bytesPerRow
+
+
+class TdmIterEdgeShiftGeometry(NamedTuple):
+  """Band geometry for one tensor's iterate-mode edge shift.
+
+  A workgroup tile is `mt` rows tall along the tensor's free dimension and is
+  split into `numComp` bands of `rowsPerIl` rows, one per wave component. The
+  iterate walk advances `tileDim1` rows per step, so a band whose row count is
+  not a whole number of steps would run past the end of the tensor. The band
+  holding the edge instead begins `delta = (-freeSize) % tileDim1` rows earlier,
+  which lands its final step exactly on the free size.
+
+  `rowsPerIl` is also the smallest free size the shift can serve: a band at the
+  very start of the tensor has no upstream rows to borrow, so a free size at or
+  below it walks off the front. That bound is a property of the problem rather
+  than of the solution, so it belongs in a host-side predicate; until one
+  exists, keeping `TDMIterateEdgeShift` off by default is what enforces it.
+
+  `tc` is "A" (edge along M, coordinate 0) or "B" (edge along N, coordinate 1).
+  """
+  tileDim1: int
+  rowsPerIl: int
+  numComp: int
+  mt: int
+  tc: str
+  freeIdx: int
+
+
+def tdmIterEdgeShiftGeometry(state, tc="A"):
+  """Return the band geometry when this solution can absorb `tc`'s free-dimension
+  edge by pointer shift, or None when it must keep the whole-step size assertion.
+
+  The shift moves one band's global base backwards and re-labels the affected
+  accumulator slots at store time. That keeps the LDS byte layout, the local
+  read addresses and the walk length untouched, but it relies on the store path
+  masking the borrowed rows through the single edge lane mask, so it is limited
+  to the configurations that route their edge handling through that mask.
+  """
+  assert tc in ("A", "B"), tc
+  freeIdx = 0 if tc == "A" else 1
+  setting = state.get("TDMIterateEdgeShift", 0)
+  if not setting:
+    return None
+  # The N-direction correction reaches only the C and D addresses, so it sits
+  # behind its own value rather than riding on the M one. See
+  # AsmAddressCalculation.emitTdmEdgeShiftFixupN / applyTdmEdgeShiftN.
+  if tc == "B" and setting < 2:
+    return None
+  if not state.get("_TDMIterateMode%s" % tc, False):
+    return None
+  if state["UseSubtileImpl"] or state["ProblemType"]["Sparse"]:
+    return None
+  if state["ProblemType"]["TLU%s" % tc] or not state["UnrollMajorLDS%s" % tc]:
+    return None
+  # Wave-separated descriptors give each wave component its own band; a single
+  # wave instead owns the whole tile as one band spanning MacroTile0 rows.
+  numWaves = (state["NumThreads"] // state["WavefrontSize"])
+  if numWaves == 1:
+    numComp = 1
+  elif numWaves % 2 == 0:
+    numComp = numWaves // 2
+  else:
+    return None
+  if numComp & (numComp - 1) != 0:
+    return None
+  # KernelWriter dispatches to the wave-separated descriptors on NumWaves > 1 and
+  # to the single-wave path otherwise; numComp above mirrors that split, so a
+  # change to the dispatch has to be reflected here too.
+  assert (numComp == numWaves // 2) if numWaves > 1 else (numComp == 1)
+  # TDMSplit cuts a band into two issues that share one descriptor increment, so
+  # a shift applied to one of them cannot be expressed independently.
+  if state["TDMSplit"]:
+    return None
+  # Edge lanes are dropped by clipping their address to BufferOOB.
+  if not state["BufferStore"]:
+    return None
+  # Paths that route edge handling somewhere other than the shared edge mask.
+  if state["StoreRemapVectorWidth"]:
+    return None
+  if state["StreamK"] or state["PrefetchAcrossPersistent"]:
+    return None
+  if state.get("NumWaveSplitK", 1) > 1:
+    return None
+  if state["_GlobalAccumulation"] == "MultipleBufferSingleKernel":
+    return None
+  # The CompactLoopStore look-ahead defers the row pointer advance and rebuilds
+  # the address from the shared base coord0 rather than this element's, which
+  # would drop the re-labelling (AsmAddressCalculation.emitScaleToBpe).
+  if state["CompactLoopStore"]:
+    return None
+  # LocalSplitU re-derives each lane's store coordinate through the LDS
+  # reduction rather than the per-wave band mapping the shift is expressed in,
+  # so bandOrigin no longer identifies the shifted slots.
+  if state.get("LocalSplitU", 1) > 1:
+    return None
+  # DirectToVgpr bypasses LDS for that tensor, so the band-to-slot mapping the
+  # shift is expressed in does not describe where its data lands.
+  if state["DirectToVgpr%s" % tc] or state.get("DirectToVgprSparseMetadata", False):
+    return None
+  pt = state["ProblemType"]
+  if tc == "B":
+    # Along N the correction cannot ride on a coordinate: no C/D/E/Gate address
+    # reads coord1: they are built from per-tensor row pointers that advance by a
+    # scalar row increment. The shift is therefore applied to each address with
+    # that tensor's own row stride, which is done for C and D only. Tensors with
+    # a separate row pointer are left out.
+    if pt["UseE"] or pt["UseGateResidual"]:
+      return None
+    # Packed C1 rebuilds the row pointer from coord1 instead of advancing it.
+    if len(state.get("PackedC1IndicesX", [0])) > 1:
+      return None
+  # Sub-byte elements make the byte offset of a row count non-integral.
+  bpe = state["ProblemType"]["DataType%s" % tc].numBytes()
+  if bpe < 1 or bpe != int(bpe):
+    return None
+  if state["ProblemType"]["MXBlock%s" % tc]:
+    return None
+
+  tileDim1 = tdmIterTileDim1(state, tc)
+  if tileDim1 is None or tileDim1 <= 1:
+    return None
+  mt = state["MacroTile%u" % freeIdx]
+  if mt % numComp != 0:
+    return None
+  rowsPerIl = mt // numComp
+  # Keeps every band on whole steps, which is what bounds delta below tileDim1
+  # and so keeps the borrowed rows inside the upstream band. mt is a whole
+  # number of bands, so this covers mt as well.
+  if rowsPerIl % tileDim1 != 0:
+    return None
+  # delta and the index of the edge band are derived with an s_and and an
+  # s_lshr, which needs both divisors to be powers of two.
+  if tileDim1 & (tileDim1 - 1) or rowsPerIl & (rowsPerIl - 1):
+    return None
+  return TdmIterEdgeShiftGeometry(tileDim1=tileDim1, rowsPerIl=rowsPerIl,
+                                  numComp=numComp, mt=mt, tc=tc, freeIdx=freeIdx)
 
 # Module-level collector that accumulates type mismatches across all Solution
 # instances during a build.  Key is (param_name, actual_type_name,
@@ -5156,15 +5308,25 @@ class Solution(collections.abc.Mapping):
     # be a multiple of the step is enough to keep every wave on whole steps.
     #
     # Subtile builds its descriptors elsewhere, so it is not described by this.
+    #
+    # TDMIterateEdgeShift buys the same guarantee by moving the edge band's base
+    # back onto a step boundary, so the assertion is dropped for a tensor whose
+    # geometry qualifies. Any multiple already required by another feature is
+    # left in place.
+    #
+    # Asking for the shift and not getting it would produce a kernel identical to
+    # the TDMIterateEdgeShift=0 one under a different name, so say so instead.
+    edgeShiftWanted = state.get("TDMIterateEdgeShift", 0)
+    edgeShiftGot = False
     for tc, freeIdx in (("A", 0), ("B", 1)):
       if state["UseSubtileImpl"] or not state.get("_TDMIterateMode%s" % tc, False):
         continue
-      # tile_dim1 as the descriptor carries it: rows of DepthU input elements.
-      bytesPerRow = int(round(state["DepthU"] * state["ProblemType"]["DataType%s" % tc].numBytes()))
-      lbspp = state["LdsBlockSizePerPad%s" % tc]
-      if bytesPerRow <= 0 or lbspp % bytesPerRow != 0:
+      if tdmIterEdgeShiftGeometry(state, tc) is not None:
+        edgeShiftGot = True
+        continue
+      tileDim1 = tdmIterTileDim1(state, tc)
+      if tileDim1 is None:
         continue  # the codegen guard reports the real reason
-      tileDim1 = lbspp // bytesPerRow
       if tileDim1 <= 1:
         continue
       mt = state["MacroTile%u" % freeIdx]
@@ -5175,6 +5337,13 @@ class Solution(collections.abc.Mapping):
         return
       key = "AssertFree%uElementMultiple" % freeIdx
       state[key] = int(math.lcm(state[key], tileDim1))
+
+    if edgeShiftWanted and not edgeShiftGot:
+      reject(state, printRejectionReason,
+             "TDMIterateEdgeShift=%u but no tensor's geometry qualifies, so this "
+             "would duplicate the TDMIterateEdgeShift=0 kernel under another name"
+             % edgeShiftWanted)
+      return
 
     if (state["UnrollMajorLDSA"] or state["UnrollMajorLDSB"]) and (not state["EnableMatrixInstruction"]) and (not state["UseDotInstruction"]):
         reject(state, printRejectionReason, "UnrollMajorLDS Supports only in EnableMatrixInstruction=1 or dot2 kernel")

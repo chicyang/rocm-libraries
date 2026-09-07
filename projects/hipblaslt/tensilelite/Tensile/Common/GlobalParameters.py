@@ -624,7 +624,8 @@ defaultBenchmarkCommonParameters = [
     # a cluster can share data loaded via TDM-multicast, reducing redundant global reads.
     {"ClusterDim": [[1, 1]]},
     {"HalfPLR": [0]},
-    {"TDMIterateMode": [0]}
+    {"TDMIterateMode": [0]},
+    {"TDMIterateEdgeShift": [0]}
 ]
 
 # dictionary of defaults comprised of default option for each parameter
