@@ -28,6 +28,7 @@ from rocisa.instruction import (
     SCBranchSCC0,
     SCmpEQU32,
     SCSelectB32,
+    SLShiftRightB32,
     SMulI32,
     SSubU32,
     SWaitCnt,
@@ -75,10 +76,23 @@ class TDMIterateUnshiftMFMA(TDMIterateUnshiftBase):
         writer.tdmIterEdgeDelta(module, kernel, tc, ti, rowsSgpr, deltaSgpr)
         writer.tdmIterEdgeOwner(module, kernel, tc, ti, rowsSgpr, ownerSgpr)
 
+        # `cOwn` names one MI block along the coalesced dimension. A thread holds
+        # `miOuterTTCoal` register runs, and consecutive runs of one wave are
+        # `miWaveGroupCoal` blocks apart, so the block splits as
+        #   tt = cOwn // miWaveGroupCoal   -- which register run to move
+        #   waveG0 = cOwn % miWaveGroupCoal -- which wave does the moving
+        # and `tt * miWaveGroupCoal + waveG0` reproduces `cOwn`. The oracle
+        # guarantees miWaveGroupCoal is a power of two whenever the split is
+        # needed, so a shift and a mask suffice.
+        miOuterTTCoal = lay["miOuterTTCoal"]
+        ttSgpr = None
+        if miOuterTTCoal > 1:
+            ttSgpr = writer.sgprPool.checkOut(1, tag="unshiftTT%s" % tc, preventOverflow=False)
+
         # This wave's block index along the coalesced dimension. Waves that do
         # not own the boundary component get delta = 0 and skip every pass, so
         # no exec-mask manipulation is needed.
-        miWaveGroupCoal = kernel["MIWaveGroup"][0] if tP["isA"] else kernel["MIWaveGroup"][1]
+        miWaveGroupCoal = lay["miWaveGroupCoal"]
         miWGIdStride = (
             kernel["WavefrontSize"]
             if tP["isA"]
@@ -95,6 +109,13 @@ class TDMIterateUnshiftMFMA(TDMIterateUnshiftBase):
             )
             module.add(VReadfirstlaneB32(dst=sgpr(rowsSgpr), src=vgpr(blkVgpr),
                                          comment="coal block index of this wave"))
+        if miOuterTTCoal > 1:
+            module.add(SLShiftRightB32(
+                dst=sgpr(ttSgpr), shiftHex=(miWaveGroupCoal - 1).bit_length(),
+                src=sgpr(ownerSgpr),
+                comment="tt = cOwn / miWaveGroupCoal(%u)" % miWaveGroupCoal))
+            module.add(SAndB32(sgpr(ownerSgpr), sgpr(ownerSgpr), miWaveGroupCoal - 1,
+                               "waveG0 = cOwn %% miWaveGroupCoal(%u)" % miWaveGroupCoal))
         module.add(SCmpEQU32(src0=sgpr(rowsSgpr), src1=sgpr(ownerSgpr),
                              comment="does this wave own the boundary component?"))
         module.add(SCSelectB32(sgpr(deltaSgpr), sgpr(deltaSgpr), 0,
@@ -109,15 +130,32 @@ class TDMIterateUnshiftMFMA(TDMIterateUnshiftBase):
             module.add(vectorStaticMultiply(vgpr(permVgpr), vgpr(permVgpr), writer.states.bpr,
                                             permTmp, comment="lane index -> byte address"))
 
-        for s in steps:
-            skip = Label(writer.labels.getNameInc("TDMIterUnshift%s_skip%u" % (tc, s)), "")
-            module.add(SAndB32(sgpr(rowsSgpr), sgpr(deltaSgpr), s,
-                               "delta & %u ?" % s))
-            module.add(SCBranchSCC0(labelName=skip.getLabelName(),
-                                    comment="skip the shift-by-%u pass" % s))
-            module.add(self._shiftBy(writer, kernel, lay, arch2acc, s, permVgpr))
-            module.add(skip)
+        # Register indices are compile-time and `tt` is not, so one block of
+        # passes is emitted per run and the runtime `tt` selects between them.
+        # Exactly one block runs; a non-owning wave has delta = 0 and skips
+        # every pass inside whichever block it enters.
+        for tt in range(miOuterTTCoal):
+            ttSkip = None
+            if miOuterTTCoal > 1:
+                ttSkip = Label(
+                    writer.labels.getNameInc("TDMIterUnshift%s_tt%u" % (tc, tt)), "")
+                module.add(SCmpEQU32(src0=sgpr(ttSgpr), src1=tt,
+                                     comment="is the boundary component in register run %u?" % tt))
+                module.add(SCBranchSCC0(labelName=ttSkip.getLabelName(),
+                                        comment="skip register run %u" % tt))
+            for s in steps:
+                skip = Label(writer.labels.getNameInc("TDMIterUnshift%s_skip%u" % (tc, s)), "")
+                module.add(SAndB32(sgpr(rowsSgpr), sgpr(deltaSgpr), s,
+                                   "delta & %u ?" % s))
+                module.add(SCBranchSCC0(labelName=skip.getLabelName(),
+                                        comment="skip the shift-by-%u pass" % s))
+                module.add(self._shiftBy(writer, kernel, lay, arch2acc, s, permVgpr, tt))
+                module.add(skip)
+            if ttSkip is not None:
+                module.add(ttSkip)
 
+        if ttSgpr is not None:
+            writer.sgprPool.checkIn(ttSgpr)
         writer.vgprPool.checkIn(permVgpr)
         writer.vgprPool.checkIn(dummy)
         writer.vgprPool.checkIn(tmpVgpr)
@@ -127,8 +165,13 @@ class TDMIterateUnshiftMFMA(TDMIterateUnshiftBase):
         writer.sgprPool.checkIn(deltaSgpr)
         return module
 
-    def _shiftBy(self, writer, kernel, lay, arch2acc, s: int, permVgpr: int) -> Module:
-        """One in-place pass moving the coal dimension down by `s`."""
+    def _shiftBy(self, writer, kernel, lay, arch2acc, s: int, permVgpr: int,
+                 tt: int = 0) -> Module:
+        """One in-place pass moving register run `tt` of the coal dimension down by `s`.
+
+        The move stays inside the run: `tt` only offsets the coalesced index, so
+        no value crosses into a neighbouring run.
+        """
         module = Module("shiftBy%u" % s)
         nCoal = lay["numContOutCoal"]
         assert s <= nCoal, (
@@ -140,8 +183,10 @@ class TDMIterateUnshiftMFMA(TDMIterateUnshiftBase):
         stridePrep = lay["regStridePrep"]
         permOffset = (lay["threadInterval"] % kernel["WavefrontSize"]) * writer.states.bpr
 
+        ttOffset = tt * lay["numRegInMIBCoal"]
+
         def accIdx(coal, prep):
-            return arch2acc[coal * strideCoal + prep * stridePrep]
+            return arch2acc[(coal + ttOffset) * strideCoal + prep * stridePrep]
 
         staging = writer.vgprPool.checkOut(s, tag="unshiftStage%u" % s)
         for p in range(nPrep):

@@ -403,6 +403,127 @@ def test_shift_step_still_rejected_when_strictly_greater_than_num_cont_out_coal(
     assert "shift step" in r["reason"]
 
 
+def _f32_ott2_state(**ovr):
+    """f32-like config whose threads hold two register runs along the coal dim.
+
+    f32 caps VectorWidth at 4 // regPerElem, so MIWaveTile 8 gives
+    miOuterTTCoal == 2. NumWaves 8 makes numComp 4, which is exactly
+    miOuterTTCoal * MIWaveGroup[0], and MacroTile 256 keeps
+    rowsPerWave == waveBlockSpan == 64.
+    """
+    s = _state(
+        NumWaves=8,
+        DepthU=64,
+        MacroTile0=256,
+        MacroTile1=256,
+        VectorWidthA=4,
+        VectorWidthB=4,
+        MIWaveTile=[8, 8],
+        MIWaveGroup=[2, 2],
+        ProblemType=dict(DataTypeA=_FakeDataType(nbytes=4), DataTypeB=_FakeDataType(nbytes=4)),
+    )
+    s.update(ovr)
+    return s
+
+
+def test_two_outer_tiles_is_applicable():
+    for tc in ("A", "B"):
+        lay = coalLayout(_f32_ott2_state(), isA=(tc == "A"))
+        assert lay["miOuterTTCoal"] == 2
+        g = geometry(_f32_ott2_state(), tc)
+        assert g["numComp"] == 4
+        assert g["rowsPerWave"] == 64 == g["waveBlockSpan"]
+        r = evaluate(_f32_ott2_state(), tc)
+        assert r["applicable"] is True, "%s rejected: %s" % (tc, r["reason"])
+        assert r["reason"] == ""
+
+
+def test_two_outer_tiles_still_rejects_multiple_out_blocks():
+    # Halving MIOutputVectorWidth splits B's MI output into two coal blocks.
+    r = evaluate(_f32_ott2_state(MIOutputVectorWidth=4), "B")
+    assert r["applicable"] is False
+    assert "OutBlocksInMI" in r["reason"]
+
+
+def test_two_outer_tiles_still_rejects_matrix_inst_b_coal():
+    r = evaluate(_f32_ott2_state(MatrixInstBM=2, MacroTile0=512), "A")
+    assert r["applicable"] is False
+    assert "matrixInstBCoal" in r["reason"]
+
+
+def test_rejects_when_tt_wave_split_does_not_cover_the_components():
+    # miOuterTTCoal * MIWaveGroup[0] must equal numComp, or the (tt, waveG0)
+    # decomposition of cOwn would address the wrong block.
+    r = evaluate(_f32_ott2_state(NumWaves=4, MacroTile0=128), "A")
+    assert r["applicable"] is False
+    assert "miOuterTTCoal" in r["reason"]
+
+
+def test_rejects_non_power_of_two_wave_group_with_two_outer_tiles():
+    # cOwn is split with a shift and a mask, so the divisor must be a power of 2.
+    # numComp 6 == miOuterTTCoal 2 * MIWaveGroup[0] 3 and rowsPerWave stays 64,
+    # so only the power-of-two question is under test.
+    r = evaluate(_f32_ott2_state(MIWaveGroup=[3, 2], NumWaves=12, MacroTile0=384), "A")
+    assert r["applicable"] is False
+    assert "miWaveGroupCoal" in r["reason"]
+
+
+def _vw1_ott8_state(**ovr):
+    """MIWaveTile 8 with an explicit VectorWidth 1: eight register runs.
+
+    VectorWidthA/B are fork parameters the test YAMLs set directly, so this
+    combination is common and is not tied to any particular datatype.
+    """
+    s = _state(
+        NumWaves=32,
+        DepthU=64,
+        MacroTile0=256,
+        MacroTile1=256,
+        VectorWidthA=1,
+        VectorWidthB=1,
+        MIWaveTile=[8, 8],
+        MIWaveGroup=[2, 2],
+        LdsBlockSizePerPadA=512,
+        LdsBlockSizePerPadB=512,
+        ProblemType=dict(DataTypeA=_FakeDataType(nbytes=4), DataTypeB=_FakeDataType(nbytes=4)),
+    )
+    s.update(ovr)
+    return s
+
+
+def test_eight_outer_tiles_is_applicable():
+    for tc in ("A", "B"):
+        lay = coalLayout(_vw1_ott8_state(), isA=(tc == "A"))
+        assert lay["miOuterTTCoal"] == 8
+        g = geometry(_vw1_ott8_state(), tc)
+        assert g["numComp"] == 16
+        assert g["rowsPerWave"] == 16 == g["waveBlockSpan"]
+        assert shift_steps(g["tileDim1"]) == [1]
+        r = evaluate(_vw1_ott8_state(), tc)
+        assert r["applicable"] is True, "%s rejected: %s" % (tc, r["reason"])
+
+
+def test_rejects_mi_wave_tile_not_a_multiple_of_vector_width():
+    # VectorWidth 16 above MIWaveTile 8 truncates miOuterTTCoal to 0. MacroTile0
+    # 512 keeps rowsPerWave == waveBlockSpan == 256 so only this is under test.
+    r = evaluate(_state(VectorWidthA=16, MacroTile0=512), "A")
+    assert r["applicable"] is False
+    assert "not a multiple of VectorWidthA" in r["reason"]
+
+
+def test_rejects_mi_wave_tile_with_non_divisible_vector_width():
+    # MIWaveTile 6 / VectorWidth 4 truncates to a single register run, which
+    # without this guard would look like the already-supported layout while
+    # leaving part of the accumulators unmoved.
+    s = _state(MIWaveTile=[6, 8], VectorWidthA=4, MacroTile0=128)
+    assert coalLayout(s, isA=True)["miOuterTTCoal"] == 1
+    g = geometry(s, "A")
+    assert g["rowsPerWave"] == 64 == g["waveBlockSpan"]
+    r = evaluate(s, "A")
+    assert r["applicable"] is False
+    assert "not a multiple of VectorWidthA" in r["reason"]
+
+
 def test_reference_bf16_config_still_accepted_after_relax():
     # The shipped gfx1250 bf16 configuration (tile_dim1 8, numContOutCoal 8 for
     # A) must remain accepted: its largest shift step is 4, well under the

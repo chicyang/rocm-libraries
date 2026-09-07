@@ -40,6 +40,7 @@ def coalLayout(kernel, isA: bool) -> dict:
     matrixInstBPrep = matrixInstBN if isA else matrixInstBM
     miWaveTileCoal = kernel["MIWaveTile"][0] if isA else kernel["MIWaveTile"][1]
     miWaveTilePrep = kernel["MIWaveTile"][1] if isA else kernel["MIWaveTile"][0]
+    miWaveGroupCoal = kernel["MIWaveGroup"][0] if isA else kernel["MIWaveGroup"][1]
     vectorWidth = kernel["VectorWidthA"] if isA else kernel["VectorWidthB"]
 
     conThInProcDim = bool(kernel["SourceSwap"]) ^ (not isA)
@@ -59,6 +60,24 @@ def coalLayout(kernel, isA: bool) -> dict:
     )
     miOuterTTCoal = miWaveTileCoal // vectorWidth
 
+    # A thread's coalesced-dimension registers form `miOuterTTCoal` runs of
+    # `numContOutCoal * OutBlocksInMI * matrixInstBCoal`; consecutive runs sit
+    # `WGShapeCoal = MIBShapeCoal * miWaveGroupCoal` apart in coordinate space.
+    numRegInMIBCoal = numContOutCoal * outBlocksInMI * matrixInstBCoal
+
+    # Same quantity as ShiftVectorComponentsMFMAAllThread's
+    # `MIBShapeCoal // numThreadInCoal`, spelled the way that emitter spells it.
+    subMBShapeCoal = (
+        (matrixInstCoal * vectorWidth)
+        if conThInProcDim
+        else (numThreadInCoal * numContOutCoal)
+    )
+    miBShapeCoal = subMBShapeCoal * outBlocksInMI * matrixInstBCoal
+    assert numRegInMIBCoal == miBShapeCoal // numThreadInCoal, (
+        "numRegInMIBCoal=%u disagrees with MIBShapeCoal(%u) // numThreadInCoal(%u)"
+        % (numRegInMIBCoal, miBShapeCoal, numThreadInCoal)
+    )
+
     numOutputsPrep = (matrixInstCoal * matrixInstPrep // numThreadInWave) if conThInProcDim else 1
     numOutputsPrep = numOutputsPrep * matrixInstBPrep * miWaveTilePrep
 
@@ -77,9 +96,14 @@ def coalLayout(kernel, isA: bool) -> dict:
         "numOutputsPrep": numOutputsPrep,
         "regStrideCoal": regStrideCoal,
         "regStridePrep": regStridePrep,
-        # Block counts along the coalesced dimension. The un-shift emitter
-        # covers exactly one block of each, so the oracle checks them.
+        # Register runs along the coalesced dimension: `miOuterTTCoal` of them,
+        # `numRegInMIBCoal` registers apart. The un-shift emits one block per run
+        # and branches on which run holds the boundary component.
         "miOuterTTCoal": miOuterTTCoal,
+        "numRegInMIBCoal": numRegInMIBCoal,
+        "miWaveGroupCoal": miWaveGroupCoal,
+        # Block counts the un-shift emitter does not iterate, so the oracle
+        # requires a single block of each.
         "OutBlocksInMI": outBlocksInMI,
         "matrixInstBCoal": matrixInstBCoal,
     }
@@ -191,10 +215,36 @@ def evaluate(state: dict, tc: str, miArchVgpr=None) -> dict:
 
     # The emitter walks one block per (coal, prep) pair; more than one block in
     # any of these would leave part of the accumulators unmoved.
-    lay = coalLayout(state, tc == "A")
-    for key in ("miOuterTTCoal", "OutBlocksInMI", "matrixInstBCoal"):
+    # miOuterTTCoal is MIWaveTile // VectorWidth. VectorWidthA/B are fork
+    # parameters and can be set above MIWaveTile, which would truncate that
+    # division and describe a register layout the accumulators do not have.
+    isA = tc == "A"
+    miWaveTileCoal = state["MIWaveTile"][0] if isA else state["MIWaveTile"][1]
+    vectorWidthCoal = state["VectorWidth%s" % tc]
+    if vectorWidthCoal <= 0 or miWaveTileCoal % vectorWidthCoal != 0:
+        return no("MIWaveTileCoal=%u is not a multiple of VectorWidth%s=%u, so "
+                  "miOuterTTCoal would not be a whole number of register runs"
+                  % (miWaveTileCoal, tc, vectorWidthCoal))
+
+    lay = coalLayout(state, isA)
+    for key in ("OutBlocksInMI", "matrixInstBCoal"):
         if lay[key] != 1:
             return no("%s=%u: the emitter covers a single block" % (key, lay[key]))
+
+    # With more than one register run per thread the boundary component is named
+    # by a (tt, waveG0) pair rather than by the wave alone:
+    #   tt = cOwn // miWaveGroupCoal, waveG0 = cOwn % miWaveGroupCoal.
+    # The emitter forms that split with a shift and a mask, and the split only
+    # names every component once when the two counts multiply out to numComp.
+    if lay["miOuterTTCoal"] != 1:
+        miWaveGroupCoal = lay["miWaveGroupCoal"]
+        if not _is_pow2(miWaveGroupCoal):
+            return no("miWaveGroupCoal=%u is not a power of 2, so cOwn cannot be "
+                      "split with a shift and a mask" % miWaveGroupCoal)
+        if lay["miOuterTTCoal"] * miWaveGroupCoal != g["numComp"]:
+            return no("miOuterTTCoal=%u * miWaveGroupCoal=%u != numComp=%u, so the "
+                      "(tt, wave) split does not name the components one-to-one"
+                      % (lay["miOuterTTCoal"], miWaveGroupCoal, g["numComp"]))
 
     # A pass shifts by s within a lane and takes the top s from the neighbour.
     # s == numContOutCoal is a pure one-lane rotation and is fine; beyond that
