@@ -268,18 +268,6 @@ def test_not_applicable_when_more_than_one_out_block_in_mi():
     assert "OutBlocksInMI" in r["reason"]
 
 
-def test_not_applicable_when_matrix_inst_b_coal_greater_than_one():
-    r = evaluate(_state(MatrixInstBM=2, MacroTile0=512), "A")
-    assert r["applicable"] is False
-    assert "matrixInstBCoal" in r["reason"]
-
-
-def test_not_applicable_for_matrix_inst_4():
-    r = evaluate(_state(MatrixInstM=4, MacroTile0=64), "A")
-    assert r["applicable"] is False
-    assert "MatrixInstM/N == 4" in r["reason"]
-
-
 def test_not_applicable_without_mi_arch_vgpr():
     r = evaluate(_state(MIArchVgpr=False), "A")
     assert r["applicable"] is False
@@ -443,12 +431,6 @@ def test_two_outer_tiles_still_rejects_multiple_out_blocks():
     r = evaluate(_f32_ott2_state(MIOutputVectorWidth=4), "B")
     assert r["applicable"] is False
     assert "OutBlocksInMI" in r["reason"]
-
-
-def test_two_outer_tiles_still_rejects_matrix_inst_b_coal():
-    r = evaluate(_f32_ott2_state(MatrixInstBM=2, MacroTile0=512), "A")
-    assert r["applicable"] is False
-    assert "matrixInstBCoal" in r["reason"]
 
 
 def test_rejects_when_tt_wave_split_does_not_cover_the_components():

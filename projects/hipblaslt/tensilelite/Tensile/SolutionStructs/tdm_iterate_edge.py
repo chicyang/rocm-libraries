@@ -210,8 +210,6 @@ def evaluate(state: dict, tc: str, miArchVgpr=None) -> dict:
                   "cross waves" % (g["rowsPerWave"], g["waveBlockSpan"]))
     if not (state.get("MIArchVgpr", False) if miArchVgpr is None else miArchVgpr):
         return no("MIArchVgpr is off: ds_bpermute cannot read an AGPR")
-    if state["MatrixInstM"] == 4 or state["MatrixInstN"] == 4:
-        return no("MatrixInstM/N == 4 needs a remap coalLayout does not do")
 
     # The emitter walks one block per (coal, prep) pair; more than one block in
     # any of these would leave part of the accumulators unmoved.
@@ -226,10 +224,14 @@ def evaluate(state: dict, tc: str, miArchVgpr=None) -> dict:
                   "miOuterTTCoal would not be a whole number of register runs"
                   % (miWaveTileCoal, tc, vectorWidthCoal))
 
+    # `matrixInstBCoal` is MatrixInstruction[3], which every WMMA entry in
+    # makeValidWMMA() sets to 1, so only OutBlocksInMI can exceed one here. It
+    # does so for the non-square [32,16,128,1]: one instruction's coalesced
+    # output then occupies two blocks, and the emitter walks a single one.
     lay = coalLayout(state, isA)
-    for key in ("OutBlocksInMI", "matrixInstBCoal"):
-        if lay[key] != 1:
-            return no("%s=%u: the emitter covers a single block" % (key, lay[key]))
+    if lay["OutBlocksInMI"] != 1:
+        return no("OutBlocksInMI=%u: the emitter covers a single block"
+                  % lay["OutBlocksInMI"])
 
     # With more than one register run per thread the boundary component is named
     # by a (tt, waveG0) pair rather than by the wave alone:
