@@ -11,8 +11,11 @@ so its walk ends exactly on the boundary, and the accumulators of the one MI
 wave that covers those rows are moved back afterwards.
 
 The move is confined to a single wave, which is what makes `ds_bpermute` enough,
-so the shifted component must coincide with exactly one wave's span along the
-coalesced free dimension.
+so the shifted component must fit inside one MI wave's span along the coalesced
+free dimension. A component may be finer than that span: `subPerBlock` counts how
+many components share one MI wave block, and the un-shift then narrows `exec` to
+the lanes at or above the component's start so the components below it are left
+alone.
 """
 
 import math
@@ -144,11 +147,22 @@ def geometry(state: dict, tc: str) -> dict:
     )
     waveBlockSpan = state["VectorWidth%s" % tc] * miBShape
 
+    # How many load components fit inside one MI wave block along the coalesced
+    # dimension. 1 means the two splits coincide; >1 means the load side is the
+    # finer of the two and the un-shift has to mask lanes. 0 flags a pair of
+    # spans that do not nest at all.
+    subPerBlock = (
+        waveBlockSpan // rowsPerWave
+        if rowsPerWave and waveBlockSpan % rowsPerWave == 0
+        else 0
+    )
+
     return {
         "numComp": numComp,
         "rowsPerWave": rowsPerWave,
         "tileDim1": tileDim1,
         "waveBlockSpan": waveBlockSpan,
+        "subPerBlock": subPerBlock,
         "bytesPerRow": bytesPerRow,
     }
 
@@ -202,12 +216,21 @@ def evaluate(state: dict, tc: str, miArchVgpr=None) -> dict:
                   % (g["rowsPerWave"], g["tileDim1"]))
 
     # ---- 3. store side: can the accumulators be moved back? ---------------
-    # The move uses ds_bpermute, which only reaches lanes inside one wave. So
-    # the displaced region must be exactly one MI wave, and the emitter must be
-    # able to address it with a single (coal, prep) loop.
-    if g["rowsPerWave"] != g["waveBlockSpan"]:
-        return no("rowsPerWave=%u != MI wave block span=%u, so the move would "
-                  "cross waves" % (g["rowsPerWave"], g["waveBlockSpan"]))
+    # The move uses ds_bpermute, which only reaches lanes inside one wave, so
+    # the displaced region has to sit inside a single MI wave block. A component
+    # finer than that block is fine -- the emitter masks lanes down to it -- but
+    # a coarser one would need an LDS round trip and a barrier.
+    if g["rowsPerWave"] > g["waveBlockSpan"]:
+        return no("rowsPerWave=%u exceeds the MI wave block span=%u, so the move "
+                  "would cross waves and ds_bpermute cannot reach the neighbour"
+                  % (g["rowsPerWave"], g["waveBlockSpan"]))
+    subPerBlock = g["subPerBlock"]
+    if subPerBlock == 0:
+        return no("MI wave block span=%u is not a multiple of rowsPerWave=%u"
+                  % (g["waveBlockSpan"], g["rowsPerWave"]))
+    if not _is_pow2(subPerBlock):
+        return no("subPerBlock=%u is not a power of 2, so sub cannot be taken out "
+                  "of cOwn with a shift and a mask" % subPerBlock)
     if not (state.get("MIArchVgpr", False) if miArchVgpr is None else miArchVgpr):
         return no("MIArchVgpr is off: ds_bpermute cannot read an AGPR")
 
@@ -233,20 +256,40 @@ def evaluate(state: dict, tc: str, miArchVgpr=None) -> dict:
         return no("OutBlocksInMI=%u: the emitter covers a single block"
                   % lay["OutBlocksInMI"])
 
-    # With more than one register run per thread the boundary component is named
-    # by a (tt, waveG0) pair rather than by the wave alone:
-    #   tt = cOwn // miWaveGroupCoal, waveG0 = cOwn % miWaveGroupCoal.
-    # The emitter forms that split with a shift and a mask, and the split only
-    # names every component once when the two counts multiply out to numComp.
-    if lay["miOuterTTCoal"] != 1:
+    # A component finer than the MI wave block is reached by narrowing exec to
+    # the lanes from its start upwards. That leans on one lane holding
+    # `numContOutCoal` consecutive coordinates across the whole block, so the
+    # block must be a single MI B-block and the component start must land on a
+    # lane boundary.
+    if subPerBlock != 1:
+        if lay["matrixInstBCoal"] != 1:
+            return no("matrixInstBCoal=%u: coordinates are not one contiguous "
+                      "lane sweep, so a finer component cannot be masked out"
+                      % lay["matrixInstBCoal"])
+        if g["rowsPerWave"] % lay["numContOutCoal"] != 0:
+            return no("rowsPerWave=%u is not a multiple of numContOutCoal=%u, so a "
+                      "component start does not fall on a lane boundary"
+                      % (g["rowsPerWave"], lay["numContOutCoal"]))
+
+    # Unless a thread holds one register run and a component covers a whole MI
+    # wave block, the boundary component is named by a (tt, waveG0, sub) triple
+    # rather than by the wave alone:
+    #   sub = cOwn % subPerBlock
+    #   waveG0 = (cOwn // subPerBlock) % miWaveGroupCoal
+    #   tt = cOwn // (subPerBlock * miWaveGroupCoal)
+    # The emitter forms that split with shifts and masks, and the split only
+    # names every component once when the three counts multiply out to numComp.
+    if lay["miOuterTTCoal"] != 1 or subPerBlock != 1:
         miWaveGroupCoal = lay["miWaveGroupCoal"]
         if not _is_pow2(miWaveGroupCoal):
             return no("miWaveGroupCoal=%u is not a power of 2, so cOwn cannot be "
                       "split with a shift and a mask" % miWaveGroupCoal)
-        if lay["miOuterTTCoal"] * miWaveGroupCoal != g["numComp"]:
-            return no("miOuterTTCoal=%u * miWaveGroupCoal=%u != numComp=%u, so the "
-                      "(tt, wave) split does not name the components one-to-one"
-                      % (lay["miOuterTTCoal"], miWaveGroupCoal, g["numComp"]))
+        if lay["miOuterTTCoal"] * miWaveGroupCoal * subPerBlock != g["numComp"]:
+            return no("miOuterTTCoal=%u * miWaveGroupCoal=%u * subPerBlock=%u != "
+                      "numComp=%u, so the (tt, wave, sub) split does not name the "
+                      "components one-to-one"
+                      % (lay["miOuterTTCoal"], miWaveGroupCoal, subPerBlock,
+                         g["numComp"]))
 
     # A pass shifts by s within a lane and takes the top s from the neighbour.
     # s == numContOutCoal is a pure one-lane rotation and is fine; beyond that

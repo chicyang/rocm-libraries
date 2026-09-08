@@ -506,6 +506,97 @@ def test_rejects_mi_wave_tile_with_non_divisible_vector_width():
     assert "not a multiple of VectorWidthA" in r["reason"]
 
 
+def _fine_load_state(**ovr):
+    """Load blocks finer than the compute blocks, for tensor B.
+
+    MI [16,16,32,1,1,8,8,4,1] with VectorWidthB 8: MacroTile1 128 over numComp 2
+    gives rowsPerWave 64, while one MI wave block spans 128 -- so two load
+    components share one compute block and subPerBlock is 2.
+    """
+    s = _state(
+        NumWaves=4,
+        MacroTile0=512,
+        MacroTile1=128,
+        MIWaveTile=[8, 8],
+        MIWaveGroup=[4, 1],
+    )
+    s.update(ovr)
+    return s
+
+
+def test_geometry_reports_sub_per_block():
+    assert geometry(_state(), "A")["subPerBlock"] == 1
+    g = geometry(_fine_load_state(), "B")
+    assert g["rowsPerWave"] == 64
+    assert g["waveBlockSpan"] == 128
+    assert g["subPerBlock"] == 2
+
+
+def test_finer_load_blocks_are_applicable():
+    r = evaluate(_fine_load_state(), "B")
+    assert r["applicable"] is True, r["reason"]
+    assert r["reason"] == ""
+
+
+def test_coarser_load_blocks_are_rejected_for_crossing_waves_only():
+    # rowsPerWave 128 over a wave block span of 64: the displaced region spans
+    # two MI waves, which ds_bpermute cannot reach.
+    r = evaluate(_state(VectorWidthA=4), "A")
+    assert r["applicable"] is False
+    assert "exceeds the MI wave block span" in r["reason"]
+    assert "cross waves" in r["reason"]
+    assert "subPerBlock" not in r["reason"]
+
+
+def test_rejects_non_power_of_two_sub_per_block():
+    # MatrixInstBN 3 widens B's wave block span to 384 against rowsPerWave 128,
+    # so sub cannot be taken out of cOwn with a shift and a mask.
+    s = _state(MacroTile1=256, MatrixInstBN=3)
+    assert geometry(s, "B")["subPerBlock"] == 3
+    r = evaluate(s, "B")
+    assert r["applicable"] is False
+    assert "subPerBlock=3 is not a power of 2" in r["reason"]
+
+
+def test_rejects_load_and_compute_blocks_that_do_not_nest():
+    # Wave block span 384 against rowsPerWave 256: neither is a multiple of the
+    # other, so there is no sub-block decomposition at all.
+    s = _state(MacroTile1=512, MatrixInstBN=3)
+    assert geometry(s, "B")["subPerBlock"] == 0
+    r = evaluate(s, "B")
+    assert r["applicable"] is False
+    assert "not a multiple of rowsPerWave" in r["reason"]
+
+
+def test_rejects_component_start_that_misses_a_lane_boundary():
+    # subPerBlock 4 puts rowsPerWave at 32 while each B lane owns 64 consecutive
+    # coordinates, so a component start falls inside a lane.
+    s = _fine_load_state(NumWaves=8, MIWaveGroup=[4, 1])
+    assert geometry(s, "B")["subPerBlock"] == 4
+    assert coalLayout(s, isA=False)["numContOutCoal"] == 64
+    r = evaluate(s, "B")
+    assert r["applicable"] is False
+    assert "does not fall on a lane boundary" in r["reason"]
+
+
+def test_rejects_when_the_three_way_split_does_not_cover_the_components():
+    # miOuterTTCoal * miWaveGroupCoal * subPerBlock must equal numComp. Doubling
+    # MIWaveGroup[1] doubles the compute-side coverage without changing numComp.
+    r = evaluate(_fine_load_state(MIWaveGroup=[4, 2]), "B")
+    assert r["applicable"] is False
+    assert "subPerBlock" in r["reason"]
+    assert "miOuterTTCoal" in r["reason"]
+
+
+def test_policy_enables_the_shift_for_finer_load_blocks():
+    s = _fine_load_state()
+    s.setdefault("AssertFree0ElementMultiple", 1)
+    s.setdefault("AssertFree1ElementMultiple", 1)
+    assert apply_policy(s, _collect([])) is True
+    assert s["_TDMIterEdgeShiftB"] is True
+    assert s["AssertFree1ElementMultiple"] == 1
+
+
 def test_reference_bf16_config_still_accepted_after_relax():
     # The shipped gfx1250 bf16 configuration (tile_dim1 8, numContOutCoal 8 for
     # A) must remain accepted: its largest shift step is 4, well under the

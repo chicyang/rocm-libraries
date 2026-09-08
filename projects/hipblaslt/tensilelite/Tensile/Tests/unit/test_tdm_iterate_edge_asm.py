@@ -223,13 +223,44 @@ def _branchCount(text):
     return len(re.findall(r"s_cbranch\S*\s+label_TDMIterUnshift", text))
 
 
+def _passCount(k, tc):
+    """Shift passes the emitter emits for `tc`.
+
+    One per delta value when every step fits a lane's coalesced run, otherwise
+    the power-of-two decomposition.
+    """
+    g = geometry(k, tc)
+    lay = coalLayout(k, tc == "A")
+    if g["tileDim1"] - 1 <= lay["numContOutCoal"]:
+        return g["tileDim1"] - 1
+    return len(shift_steps(g["tileDim1"]))
+
+
+def _hasMove(text, dst, src):
+    """True when `dst <- src` is emitted, on its own or merged into a pair.
+
+    A merged move names the lower register of each pair, so the odd half appears
+    under `dst - 1`. Without initialised asm caps rocisa expands VMovB64 into two
+    VMovB32 that keep the pair's base in the operand text, so both spellings of a
+    merged half are accepted.
+    """
+    if "v_mov_b32 v[vgprValuC+%u], v[vgprValuC+%u]" % (dst, src) in text:
+        return True
+    base, sbase = (dst, src) if dst % 2 == 0 else (dst - 1, src - 1)
+    half = "+1" if dst % 2 else ""
+    return (("v_mov_b64 v[vgprValuC+%u:vgprValuC+%u+1], v[vgprValuC+%u:vgprValuC+%u+1]"
+             % (base, base, sbase, sbase)) in text
+            or ("v_mov_b32 v[vgprValuC+%u%s], v[vgprValuC+%u%s]"
+                % (base, half, sbase, half)) in text)
+
+
 def test_single_register_run_emits_no_extra_branch():
     # The shipped bf16 configuration: one run per thread, so the dispatch adds
-    # nothing -- one branch per shift step and no tt compare.
+    # nothing -- one branch per delta value and no tt compare.
     k = _unshiftKernel()
     assert coalLayout(k, isA=True)["miOuterTTCoal"] == 1
     text = _emit(k)
-    assert _branchCount(text) == len(shift_steps(geometry(k, "A")["tileDim1"])) == 3
+    assert _branchCount(text) == _passCount(k, "A") == 7
     assert "_tt0" not in text
 
 
@@ -294,9 +325,62 @@ def test_each_register_run_touches_exactly_its_own_registers(tc):
     assert runs[0].isdisjoint(runs[1])
 
 
+def _fineLoadKernel(**ovr):
+    """subPerBlock == 2 for tensor B: two load components per MI wave block."""
+    return _unshiftKernel(
+        NumWaves=4, MacroTile0=512, MacroTile1=128,
+        MIWaveTile=[8, 8], MIWaveGroup=[4, 1], **ovr,
+    )
+
+
+def test_single_sub_block_emits_no_exec_manipulation():
+    # The shipped path: load and compute blocks coincide, so the mask would be
+    # all-ones and no exec instruction is emitted at all.
+    k = _unshiftKernel()
+    assert geometry(k, "A")["subPerBlock"] == 1
+    text = _emit(k)
+    assert "v_cmpx" not in text
+    assert "EXEC" not in text and "exec" not in text
+    assert "sub = cOwn" not in text
+
+
+def test_finer_load_blocks_mask_lanes_below_the_component():
+    k = _fineLoadKernel()
+    assert geometry(k, "B")["subPerBlock"] == 2
+    text = _emit(k, "B")
+    assert "sub = cOwn % subPerBlock(2)" in text
+    assert "cOwn /= subPerBlock(2)" in text
+    # rowsPerWave 64 / numContOutCoal 64 == 1 lane per component
+    assert "first lane of sub, 1 lanes per component" in text
+    assert "save EXEC" in text
+    assert "v_cmp_ge_u32" in text
+    # The mask goes to a temporary and is ANDed into EXEC, so the incoming EXEC
+    # is respected and VCC is left holding whatever the caller put there.
+    assert re.search(r"s_and_b(32|64) exec\S*, exec\S*, s", text)
+    assert "restore EXEC" in text
+    # the mask brackets every pass: saved before the first, restored after the last
+    lines = text.splitlines()
+    save = next(i for i, l in enumerate(lines) if "save EXEC" in l)
+    restore = next(i for i, l in enumerate(lines) if "restore EXEC" in l)
+    first = next(i for i, l in enumerate(lines) if "ds_bpermute" in l)
+    last = max(i for i, l in enumerate(lines) if "ds_bpermute" in l)
+    assert save < first and last < restore
+    assert not any("vcc" in l for l in lines[save:restore + 1]), \
+        "the masked region must not clobber VCC"
+
+
+def test_finer_load_blocks_do_not_change_the_pass_structure():
+    k = _fineLoadKernel()
+    lay = coalLayout(k, isA=False)
+    text = _emit(k, "B")
+    assert lay["miOuterTTCoal"] == 1
+    assert _branchCount(text) == _passCount(k, "B")
+
+
 def test_moves_take_their_value_from_delta_rows_above():
     # Direction check on the shift-by-1 pass of run 1: every in-lane move reads
-    # the register one coalesced position higher within the same run.
+    # the register one coalesced position higher within the same run, whether
+    # it was emitted on its own or merged into a v_mov_b64.
     k = _f32Kernel()
     lay = coalLayout(k, isA=True)
     _, arch2acc = accToArchMapper(k)
@@ -307,4 +391,4 @@ def test_moves_take_their_value_from_delta_rows_above():
         for j in range(lay["numContOutCoal"] - 1):
             dst = arch2acc[(j + off) * lay["regStrideCoal"] + prep * lay["regStridePrep"]]
             src = arch2acc[(j + 1 + off) * lay["regStrideCoal"] + prep * lay["regStridePrep"]]
-            assert "v_mov_b32 v[vgprValuC+%u], v[vgprValuC+%u]" % (dst, src) in text
+            assert _hasMove(text, dst, src), "missing move %u <- %u" % (dst, src)
