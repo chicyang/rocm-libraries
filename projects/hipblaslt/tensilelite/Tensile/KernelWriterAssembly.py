@@ -16408,13 +16408,26 @@ class KernelWriterAssembly(KernelWriter):
       self.states.tdmEdgeShiftKeepSgpr = self.sgprPool.checkOutAligned(
           self.states.laneSGPRCount, self.states.laneSGPRCount, "tdmEdgeShiftKeep", preventOverflow=False)
       self.states.tdmEdgeShiftBaseSgpr = self.sgprPool.checkOut(1, "tdmEdgeShiftBase", preventOverflow=False)
-      self.states.tdmEdgeShiftCoordVgpr = self.vgprPool.checkOut(1, "tdmEdgeShiftCoord0")
+      # A wave spans rowsPerWave = MT0 / MIWaveGroup[0] rows and the band spans
+      # rowsPerIl, so band/wave = 2 / MIWaveGroup[1]. At MIWaveGroup[1] <= 2 the
+      # band is at least as tall as the wave and bandOrigin sits on a wave
+      # boundary, so "is this element at or above bandOrigin" is one answer for
+      # the whole wave. Folding the step back into the shared coord0 base then
+      # leaves two per-element instructions and no coordinate scratch at all.
+      self.states.tdmEdgeShiftFoldBase = kernel["MIWaveGroup"][1] <= 2
+      if self.states.tdmEdgeShiftFoldBase:
+        self.states.tdmEdgeShiftAmtSgpr = self.sgprPool.checkOut(1, "tdmEdgeShiftAmt", preventOverflow=False)
+        self.states.tdmEdgeShiftBoundSgpr = self.sgprPool.checkOut(1, "tdmEdgeShiftBound", preventOverflow=False)
+      else:
+        self.states.tdmEdgeShiftCoordVgpr = self.vgprPool.checkOut(1, "tdmEdgeShiftCoord0")
       with self.allocTmpSgpr(1, tag="globalWriteElementBatch_edgeShiftTmp") as edgeShiftTmp:
         self._emitTdmEdgeShiftScalars(edgeModule, kernel, edgeShiftGeo,
                                       self.states.tdmEdgeShiftDeltaSgpr,
                                       self.states.tdmEdgeShiftOriginSgpr,
                                       edgeShiftTmp.idx, bandAsOrigin=True,
                                       baseSgpr=self.states.tdmEdgeShiftBaseSgpr)
+        if self.states.tdmEdgeShiftFoldBase:
+          self._emitTdmEdgeShiftFoldBase(edgeModule, kernel, edgeShiftGeo, edgeShiftTmp.idx)
 
     # The N counterpart. Along N the shift cannot ride on a coordinate, because
     # no address reads coord1: each address is its own row pointer plus coord0,
@@ -16566,12 +16579,19 @@ class KernelWriterAssembly(KernelWriter):
       self.sgprPool.checkIn(self.states.tdmEdgeShiftOriginSgpr)
       self.sgprPool.checkIn(self.states.tdmEdgeShiftKeepSgpr)
       self.sgprPool.checkIn(self.states.tdmEdgeShiftBaseSgpr)
-      self.vgprPool.checkIn(self.states.tdmEdgeShiftCoordVgpr)
+      if self.states.tdmEdgeShiftAmtSgpr is not None:
+        self.sgprPool.checkIn(self.states.tdmEdgeShiftAmtSgpr)
+        self.sgprPool.checkIn(self.states.tdmEdgeShiftBoundSgpr)
+      if self.states.tdmEdgeShiftCoordVgpr is not None:
+        self.vgprPool.checkIn(self.states.tdmEdgeShiftCoordVgpr)
       self.states.tdmEdgeShiftDeltaSgpr = None
       self.states.tdmEdgeShiftOriginSgpr = None
       self.states.tdmEdgeShiftKeepSgpr = None
       self.states.tdmEdgeShiftBaseSgpr = None
       self.states.tdmEdgeShiftCoordVgpr = None
+      self.states.tdmEdgeShiftAmtSgpr = None
+      self.states.tdmEdgeShiftBoundSgpr = None
+      self.states.tdmEdgeShiftFoldBase = False
 
     if self.states.tdmEdgeShiftNDeltaSgpr is not None:
       self.sgprPool.checkIn(self.states.tdmEdgeShiftNDeltaSgpr)
@@ -19183,6 +19203,40 @@ class KernelWriterAssembly(KernelWriter):
       # borrowed slots are affected, and they are dropped by the keep mask.
       mod.add(SMulI32(dst=sgpr(baseSgpr), src0=sgpr(wgName), src1=geo.mt,
                       comment="tile base row = %s * MT%u" % (wgName, geo.freeIdx)))
+
+  def _emitTdmEdgeShiftFoldBase(self, mod, kernel, geo, tmpSgpr):
+    """Fold the M step back into the shared coord0 base, once per store batch.
+
+    Every element of a wave answers "am I at or above bandOrigin" the same way
+    (see the MIWaveGroup[1] note at the allocation site), so the step back is a
+    wave-wide constant. Subtracting it from the base coord0 leaves each
+    element's `coord0 + coordOffset0` already re-labelled, and the per-element
+    work drops to the keep mask and the LDS-index clamp.
+
+    `tdmEdgeShiftBoundSgpr` receives the row a kept element must reach. Inside
+    the band that is bandOrigin, because an element survives when
+    `coord0 - delta >= bandOrigin`; outside it the shift is zero and the bound
+    is zero, which keeps every element.
+    """
+    coord0 = self.vgprs.coord0
+    mod.addComment1("TDM iterate edge shift A: fold the step back into coord0")
+    mod.add(VReadfirstlaneB32(dst=sgpr(tmpSgpr), src=vgpr(coord0),
+                              comment="this wave's first coord0"))
+    mod.add(SSubU32(dst=sgpr(tmpSgpr), src0=sgpr(tmpSgpr),
+                    src1=sgpr(self.states.tdmEdgeShiftOriginSgpr),
+                    comment="u = coord0 - bandOrigin, wraps below the band"))
+    mod.add(SCmpLtU32(src0=sgpr(tmpSgpr), src1=geo.mt,
+                      comment="u < MT%u(%u): this wave sits at or above the band"
+                              % (geo.freeIdx, geo.mt)))
+    mod.add(SCSelectB32(dst=sgpr(self.states.tdmEdgeShiftAmtSgpr),
+                        src0=sgpr(self.states.tdmEdgeShiftDeltaSgpr), src1=0,
+                        comment="step back delta rows, or none"))
+    mod.add(SCSelectB32(dst=sgpr(self.states.tdmEdgeShiftBoundSgpr),
+                        src0=sgpr(self.states.tdmEdgeShiftOriginSgpr), src1=0,
+                        comment="kept elements reach bandOrigin, or anything"))
+    mod.add(VSubU32(dst=vgpr(coord0), src0=vgpr(coord0),
+                    src1=sgpr(self.states.tdmEdgeShiftAmtSgpr),
+                    comment="coord0 -= step back: every element is now re-labelled"))
 
   def _tdmEdgeShiftGeometry(self, kernel, tc=None):
     """Band geometry when this kernel shifts `tc`'s edge band, else None.

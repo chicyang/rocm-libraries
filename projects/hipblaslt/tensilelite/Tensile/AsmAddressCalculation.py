@@ -224,7 +224,14 @@ class AddrCalculation:
         elif not ss.optSharedColVgpr or (d1 == vc1 == 0):
             # not share mode or first row always does the address calc math:
 
-            if self.coordOffset0 == 0:
+            if self.coordOffset0 == 0 and kw.states.tdmEdgeShiftFoldBase:
+                # The edge shift clamps this element's coordinate in place, so
+                # it needs a scratch of its own even at offset zero -- writing
+                # the shared base would re-label every other element too.
+                self.coord0Vgpr = tmpVgpr
+                module.add(VAddCOU32(dst=vgpr(self.coord0Vgpr), dst1=VCC(), src0=vgpr(kw.vgprs.coord0), src1=0, \
+                          comment="coord0.0: copy out so the edge shift can clamp in place"))
+            elif self.coordOffset0 == 0:
                 self.coord0Vgpr = kw.vgprs.coord0
             elif self.coordOffset0 <= 64:
                 self.coord0Vgpr = tmpVgpr
@@ -637,6 +644,23 @@ class AddrCalculation:
         sequence costs an unshifted workgroup nothing beyond the instructions.
         """
         kw = self.kernelWriter
+        keepSgpr = kw.states.tdmEdgeShiftKeepSgpr
+        laneSGPRCount = kw.states.laneSGPRCount
+        if kw.states.tdmEdgeShiftFoldBase:
+            # coord0 already carries the step back, folded into the shared base
+            # once per store batch. What is left is per element: mark the rows
+            # the band borrowed, then clamp so the LDS index of a borrowed row
+            # cannot wrap below this tile. The clamp writes the coordinate in
+            # place, so the borrowed value must be read for the mask first.
+            module.addComment0("TDM edge shift: drop borrowed rows")
+            module.add(VCmpGEU32(dst=sgpr(keepSgpr, laneSGPRCount), src0=vgpr(self.coord0Vgpr),
+                                 src1=sgpr(kw.states.tdmEdgeShiftBoundSgpr),
+                                 comment="coord0 >= bandOrigin: not a row borrowed from the band above"))
+            module.add(VMaxI32(dst=vgpr(self.coord0Vgpr), src0=vgpr(self.coord0Vgpr),
+                               src1=sgpr(kw.states.tdmEdgeShiftBaseSgpr),
+                               comment="clamp borrowed slots to this tile's base row"))
+            return keepSgpr
+
         coordVgpr = kw.states.tdmEdgeShiftCoordVgpr
         if coordVgpr is None:
             return None

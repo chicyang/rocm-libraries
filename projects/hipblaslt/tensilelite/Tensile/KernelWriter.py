@@ -288,6 +288,13 @@ class StateValues:
   tdmEdgeShiftKeepSgpr: Optional[int]    = None
   tdmEdgeShiftBaseSgpr: Optional[int]    = None
   tdmEdgeShiftCoordVgpr: Optional[int]   = None
+  # Set when the step back folds into the shared coord0 base, which needs the
+  # band test to hold for a whole wave. `tdmEdgeShiftAmtSgpr` then carries the
+  # rows this wave moves back and `tdmEdgeShiftBoundSgpr` the row a kept element
+  # must reach, and no coordinate scratch is held across the store batch.
+  tdmEdgeShiftFoldBase: bool             = False
+  tdmEdgeShiftAmtSgpr: Optional[int]     = None
+  tdmEdgeShiftBoundSgpr: Optional[int]   = None
 
   # The N-direction counterparts. `tdmEdgeShiftNInBandSgpr` marks the lanes whose
   # address needs the step back, and `tdmEdgeShiftNBytes` maps a tensor char to
