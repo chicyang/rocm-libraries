@@ -19871,9 +19871,18 @@ class KernelWriterAssembly(KernelWriter):
                 srcArg = strRef if isinstance(strRef, RegisterContainer) else sgpr(strRef)
                 mod.add(SMulI32(sgpr(byteSgpr), sgpr(edgeDeltaSgpr), srcArg,
                                 "TDM edge: delta * strideN (elements)"))
-                mod.add(SLShiftLeftB32(dst=sgpr(byteSgpr), shiftHex=int(log2(bpe)),
-                                       src=sgpr(byteSgpr),
-                                       comment="TDM edge: * bpe(%u) -> bytes" % int(bpe)))
+                # Sub-byte types pack several elements into a byte, so the
+                # element count scales down rather than up. The oracle admits
+                # only element sizes whose byte conversion is a single shift.
+                if bpe >= 1:
+                  mod.add(SLShiftLeftB32(dst=sgpr(byteSgpr), shiftHex=int(log2(bpe)),
+                                         src=sgpr(byteSgpr),
+                                         comment="TDM edge: * bpe(%u) -> bytes" % int(bpe)))
+                else:
+                  mod.add(SLShiftRightB32(dst=sgpr(byteSgpr), shiftHex=int(log2(1 / bpe)),
+                                          src=sgpr(byteSgpr),
+                                          comment="TDM edge: / %u -> bytes (bpe=%s)"
+                                                  % (int(1 / bpe), bpe)))
                 mod.add(SCmpEQU32(src0=sgpr(wIdSgpr), src1=sgpr(edgeOwnerSgpr),
                                   comment="is this the boundary component?"))
                 mod.add(SCSelectB32(sgpr(byteSgpr), sgpr(byteSgpr), 0,

@@ -214,6 +214,18 @@ def test_not_applicable_for_non_pow2_bytes_per_element():
     assert "power of 2" in r["reason"]
 
 
+def test_applicable_for_half_byte_type():
+    # fp4 packs two elements into a byte, so the pull-back scales the element
+    # count down with a right shift instead of up with a left shift. 0.5 is a
+    # legal element size. DepthU 512 keeps bytesPerRow at 256 so tile_dim1
+    # stays 8 and only the bpe question is under test.
+    r = evaluate(
+        _state(DepthU=512, ProblemType={"DataTypeA": _FakeDataType(nbytes=0.5)}), "A"
+    )
+    assert r["applicable"] is True
+    assert r["reason"] == ""
+
+
 def test_applicable_for_1_byte_type():
     # A 1-byte type (e.g. fp8) is a legal power-of-2 bpe and must not be
     # rejected for its element size. DepthU 256 keeps bytesPerRow at 256 so

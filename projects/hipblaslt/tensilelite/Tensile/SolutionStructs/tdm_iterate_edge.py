@@ -201,10 +201,18 @@ def evaluate(state: dict, tc: str, miArchVgpr=None) -> dict:
         return no("TDMSplit gives each component two disjoint row ranges")
 
     # delta and cOwn are emitted with masks and shifts, not divides, so the
-    # quantities they are derived from have to be powers of two.
+    # quantities they are derived from have to be powers of two. The pull-back
+    # scales an element count to bytes with a single shift, which admits whole
+    # bytes (shift left) and sub-byte sizes whose reciprocal is a power of two
+    # (shift right, since several elements share a byte).
     bpe = state["ProblemType"]["DataType%s" % tc].numBytes()
-    if not (bpe == int(bpe) and _is_pow2(int(bpe))):
-        return no("bytesPerElement=%s is not an integer power of 2" % bpe)
+    if bpe >= 1:
+        bpeOk = bpe == int(bpe) and _is_pow2(int(bpe))
+    else:
+        inv = 1 / bpe
+        bpeOk = inv == int(inv) and _is_pow2(int(inv))
+    if not bpeOk:
+        return no("bytesPerElement=%s is not a power of 2" % bpe)
     if g["tileDim1"] <= 1:
         return no("tile_dim1 <= 1 leaves nothing to shift")
     if not _is_pow2(g["tileDim1"]):
