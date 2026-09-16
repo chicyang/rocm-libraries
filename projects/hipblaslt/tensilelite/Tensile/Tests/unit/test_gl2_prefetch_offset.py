@@ -108,6 +108,7 @@ class TensorSpec:
     sparse_side: str = None  # for is_m: "A" or "B" -- which sparse data tensor this
                              # metadata mirrors (Sparse==1 -> A, Sparse==2 -> B); tc
                              # itself is always literally "Metadata"
+    swizzled_tdm: bool = False  # gfx1250 global pre-swizzle consumed through TDM
 
     @property
     def subtc(self):
@@ -137,7 +138,10 @@ class GL2Config:
                               # (WorkGroup0); B-type is the mirror image. So a 2D
                               # cluster exercises A and B cooperatively at once.
     matrix_inst_k: int = 128
+    matrix_inst_m: int = 16
+    matrix_inst_n: int = 16
     mx_block: int = 32
+    size_l: int = 2048       # runtime K used to derive swizzled-TDM paddedK row stride
     size_i: int = None        # free-dim size (M) override for A-type; None => clean M*MT
     size_j: int = None        # free-dim size (N) override for B-type; None => clean N*MT
     pgr: int = 2              # PrefetchGlobalRead. PGR>1 makes calculateStartAddr
@@ -205,6 +209,11 @@ def tensor_dims(spec, cfg):
     elif spec.is_mx:
         coal = spec.mt * M * cfg.matrix_inst_k // cfg.mx_block
         perp = cfg.depth_u // cfg.matrix_inst_k
+    elif spec.swizzled_tdm:
+        mi = cfg.matrix_inst_m if spec.subtc == "A" else cfg.matrix_inst_n
+        assert spec.mt % mi == 0
+        coal = mi * data_depth_u(spec, cfg)
+        perp = spec.mt * M // mi
     else:
         du = data_depth_u(spec, cfg)
         coal, perp = (spec.mt * M, du) if spec.tlu else (du, spec.mt * M)
@@ -236,8 +245,14 @@ def mt_tiles(spec, cfg):
     return cfg.cluster[0] if spec.subtc == "A" else cfg.cluster[1]
 
 
-def _A(tlu, mt, bpe=1):   return TensorSpec("A", tlu, mt, bpe)
-def _B(tlu, mt, bpe=1):   return TensorSpec("B", tlu, mt, bpe)
+def _A(tlu, mt, bpe=1, swizzled_tdm=False):
+    return TensorSpec("A", tlu, mt, bpe, swizzled_tdm=swizzled_tdm)
+
+
+def _B(tlu, mt, bpe=1, swizzled_tdm=False):
+    return TensorSpec("B", tlu, mt, bpe, swizzled_tdm=swizzled_tdm)
+
+
 def _MXSA(mt):            return TensorSpec("MXSA", True, mt, 1)
 def _MXSB(mt):            return TensorSpec("MXSB", True, mt, 1)
 def _M(side, tlu, mt):    return TensorSpec("Metadata", tlu, mt, 1, is_m=True, sparse_side=side)
@@ -257,6 +272,35 @@ CONFIGS = [
     # footprint is covered by this single WG's threads. Guards the degenerate
     # single-workgroup path. ----
     GL2Config("ab_fp8_tlu_nocluster", [_A(True, 256), _B(True, 256)], cluster=(1, 1)),
+    # ---- gfx1250 global pre-swizzle through TDM. Exercise the per-tensor gate
+    # independently first, then A+B together with whole-cluster cooperation. ----
+    GL2Config("a_swizzled_tdm", [_A(True, 64, swizzled_tdm=True), _B(False, 64)],
+              depth_u=128, cluster=(2, 1)),
+    GL2Config("b_swizzled_tdm", [_A(True, 64), _B(False, 64, swizzled_tdm=True)],
+              depth_u=128, cluster=(1, 2)),
+    GL2Config("ab_swizzled_tdm", [_A(True, 64, swizzled_tdm=True),
+                                   _B(False, 64, swizzled_tdm=True)],
+              depth_u=256, cluster=(2, 2)),
+    # Degenerate non-cooperative path: a single workgroup must cover the complete
+    # swizzled A/B footprint without cluster-local tile/share indices.
+    GL2Config("ab_swizzled_tdm_nocluster", [_A(True, 64, swizzled_tdm=True),
+                                             _B(False, 64, swizzled_tdm=True)],
+              depth_u=128, cluster=(1, 1)),
+    # More cache-line addresses than cooperative threads forces two address VGPRs
+    # per thread and exercises the swizzled per-instruction stride-add path.
+    GL2Config("ab_swizzled_tdm_nl2", [_A(True, 64, swizzled_tdm=True),
+                                       _B(False, 64, swizzled_tdm=True)],
+              depth_u=256, num_threads=32, cluster=(1, 1)),
+    # Runtime K is not swizzleK-aligned. The physical row stride must use the
+    # host-padded K extent (alignUp(2033, 32) == 2048), not raw SizeL.
+    GL2Config("ab_swizzled_tdm_padded_k", [_A(True, 64, swizzled_tdm=True),
+                                            _B(False, 64, swizzled_tdm=True)],
+              depth_u=128, cluster=(2, 2), size_l=2033),
+    # Last cluster is partial in both free dimensions. The host-padded final MI row
+    # remains addressable; excess cooperative rows clamp to that row.
+    GL2Config("ab_swizzled_tdm_edge", [_A(True, 64, swizzled_tdm=True),
+                                        _B(False, 64, swizzled_tdm=True)],
+              depth_u=128, cluster=(2, 2), size_i=91, size_j=77),
     # ---- A + B together, FP8 TLU; MT=384 (non-POT) -> gl2ncc==2 ----
     GL2Config("ab_fp8_tlu",          [_A(True, 384),  _B(True, 384)],  cluster=(2, 2)),
     # ---- A + B non-TLU; MT=384 (non-POT) on perpendicular dim ----
@@ -387,6 +431,8 @@ def _make_kernel(cfg):
         "_DepthUA": depth_u_side("A", cfg),
         "_DepthUB": depth_u_side("B", cfg),
         "MatrixInstK": cfg.matrix_inst_k,
+        "MatrixInstM": cfg.matrix_inst_m,
+        "MatrixInstN": cfg.matrix_inst_n,
         "ClusterDim": list(cfg.cluster),
         "NumThreads": cfg.num_threads,
         "DepthU": cfg.depth_u,
@@ -467,6 +513,8 @@ def build_kernel(cfg):
         shared += ["StrideAI", "StrideAL", "SizeI"]
     if "B" in subtcs:
         shared += ["StrideBJ", "StrideBL", "SizeJ"]
+    if any(t.swizzled_tdm for t in cfg.tensors):
+        shared += ["SizeL"]
     for t in cfg.tensors:
         if t.is_m:                        # StrideMetadata{I,J} + StrideMetadataL
             idxChar = "I" if t.idx == 0 else "J"
@@ -486,7 +534,12 @@ def build_kernel(cfg):
     vgpr_sets = {}
     for t in cfg.tensors:
         ia = t.ia + [2] if cfg.batched else t.ia   # batch index 2 must be in ia
-        tp = {"tensorChar": t.tc, "idx": t.idx, "tlu": t.tlu, "bpeGR": t.bpe, "ia": ia, "isM": t.is_m}
+        tp = {"tensorChar": t.tc, "idx": t.idx, "tlu": t.tlu, "bpeGR": t.bpe,
+              "ia": ia, "isM": t.is_m, "isSwizzledTDM": t.swizzled_tdm}
+        if t.swizzled_tdm:
+            mi = cfg.matrix_inst_m if t.subtc == "A" else cfg.matrix_inst_n
+            inner_k = round(16 / t.bpe)
+            tp["swizzleK"] = inner_k * (WAVESIZE // mi)
         comp.init(w, kernel, tp)
         assert tp["gl2nc"] == tensor_dims(t, cfg)[3], \
             f"{t.tc}: gl2nc {tp['gl2nc']} != expected {tensor_dims(t, cfg)[3]}"
@@ -530,6 +583,8 @@ def build_kernel(cfg):
         coal_b = _data_coal(cfg, "B")
         consts += [("StrideBJ", coal_b), ("StrideBL", coal_b),
                    ("SizeJ", free_dim_size(cfg, "B"))]
+    if any(t.swizzled_tdm for t in cfg.tensors):
+        consts += [("SizeL", cfg.size_l)]
     for t in cfg.tensors:
         if t.is_m:
             # StrideMetadata{I,J}/StrideMetadataL are both programmed to the
@@ -708,6 +763,9 @@ def inc_bytes(spec, cfg):
     if spec.is_m:
         coal, _, _, _ = tensor_dims(spec, cfg)
         return round(coal * cfg.depth_u_metadata) if spec.tlu else round(cfg.depth_u_metadata)
+    if spec.swizzled_tdm:
+        mi = cfg.matrix_inst_m if spec.subtc == "A" else cfg.matrix_inst_n
+        return round(mi * data_depth_u(spec, cfg) * bpe)
     if spec.tlu:
         return _data_coal(cfg, spec.subtc) * round(data_depth_u(spec, cfg) * bpe)
     return round(data_depth_u(spec, cfg) * bpe)
@@ -739,6 +797,21 @@ def expected_offsets(spec, cfg, stage=0, batch=0):
     bpe = spec.bpe
     coal, perp, ncc, _ = tensor_dims(spec, cfg)   # tile dim folded over the cluster
     size_free = free_dim_size(cfg, spec.subtc)
+    if spec.swizzled_tdm:
+        mi = cfg.matrix_inst_m if spec.subtc == "A" else cfg.matrix_inst_n
+        inner_k = round(16 / bpe)
+        swizzle_k = inner_k * (WAVESIZE // mi)
+        padded_k = (cfg.size_l + swizzle_k - 1) // swizzle_k * swizzle_k
+        row_stride_bytes = round(mi * padded_k * bpe)
+        last_valid_row = (size_free - 1) // mi
+        shift = (cfg.pgr + stage) * inc_bytes(spec, cfg)
+        if cfg.batched:
+            shift += batch * round(batch_stride_elems(spec, cfg) * bpe)
+        return {
+            min(row, last_valid_row) * row_stride_bytes + line * GLOBAL_PREFETCH_SIZE + shift
+            for row in range(perp)
+            for line in range(ncc)
+        }
     if spec.is_mx:
         mx_unit = cfg.matrix_inst_k // cfg.mx_block
         perp_stride = size_free * mx_unit
