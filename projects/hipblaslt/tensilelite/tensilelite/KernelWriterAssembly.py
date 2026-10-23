@@ -20489,8 +20489,14 @@ class KernelWriterAssembly(KernelWriter):
       else:
         mod.add(SMulI32(sgpr(waveOffsetSgprIdx), sgpr("WaveIdx"), dataBytes, f"woffset = WaveIdx * (mt // numWaves * du * bpe // dim1Divisor)"))
       if ldsBlockSizePerPad != 0 and ldsPadSize != 0:
-        mod.add(SLShiftRightB32(sgpr(tmpPadSgprIdx), int(log2(ldsBlockSizePerPad)), sgpr(waveOffsetSgprIdx), \
+        if ldsBlockSizePerPad & (ldsBlockSizePerPad - 1) == 0:
+          mod.add(SLShiftRightB32(sgpr(tmpPadSgprIdx), int(log2(ldsBlockSizePerPad)), sgpr(waveOffsetSgprIdx), \
                 f"numPadBlocks = woffset >> log2({ldsBlockSizePerPad=})"))
+        else:
+          # Padding intervals can be non-powers of two (e.g. six rows).
+          with self.allocTmpSgpr(2, tag="tdmPaddingDivide") as divideTmp:
+            mod.add(scalarStaticDivideAndRemainder(
+                tmpPadSgprIdx, -1, waveOffsetSgprIdx, ldsBlockSizePerPad, divideTmp, 0))
         mod.add(SMulI32(sgpr(tmpPadSgprIdx), sgpr(tmpPadSgprIdx), ldsPadSize, \
                 f"padBytes = numPadBlocks * ({ldsPadSize=})"))
         mod.add(SAddU32(sgpr(waveOffsetSgprIdx), sgpr(waveOffsetSgprIdx), sgpr(tmpPadSgprIdx), \
@@ -20629,8 +20635,14 @@ class KernelWriterAssembly(KernelWriter):
     # footprintPacked: writeStrideBytes is the post-pad footprint fA+fB; A/B tiles are packed
     # exactly, so the component jump must NOT be re-padded (tile-internal pad is set below).
     if ldsBlockSizePerPad != 0 and ldsPadSize != 0 and not _segFootprint:
-      mod.add(SLShiftRightB32(sgpr(tmpIdx), int(log2(ldsBlockSizePerPad)), sgpr(offsetIdx), \
+      if ldsBlockSizePerPad & (ldsBlockSizePerPad - 1) == 0:
+        mod.add(SLShiftRightB32(sgpr(tmpIdx), int(log2(ldsBlockSizePerPad)), sgpr(offsetIdx), \
               f"numPadBlocks = woffset >> log2({ldsBlockSizePerPad=})"))
+      else:
+        # Padding intervals can be non-powers of two (e.g. six rows).
+        with self.allocTmpSgpr(2, tag="tdmPaddingDivide") as divideTmp:
+          mod.add(scalarStaticDivideAndRemainder(
+              tmpIdx, -1, offsetIdx, ldsBlockSizePerPad, divideTmp, 0))
       mod.add(SMulI32(sgpr(tmpIdx), sgpr(tmpIdx), ldsPadSize, \
               f"padBytes = numPadBlocks * ({ldsPadSize=})"))
       mod.add(SAddU32(sgpr(offsetIdx), sgpr(offsetIdx), sgpr(tmpIdx), \
